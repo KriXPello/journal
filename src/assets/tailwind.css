@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: corporate --default, business --prefersdark;
+};
+@plugin "@iconify/tailwind4" {
+  prefix: "i";
+};
+
+@utility input-number-no-arrows {
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  -moz-appearance: textfield;
+}
+
+@utility input {
+  @apply px-1;
+}
