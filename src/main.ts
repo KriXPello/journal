@@ -13,13 +13,13 @@ import { REPOSITORY_KEY_COLLECTION } from '~/types/repositories/collection';
 const initApp = async () => {
   const app = createApp(App);
 
-  app.use(createPinia());
-  app.use(router);
-
   const repos = await createIndexedDbRepositories();
 
   app.provide(REPOSITORY_KEY_ITEM, repos.item);
   app.provide(REPOSITORY_KEY_COLLECTION, repos.collection);
+
+  app.use(createPinia());
+  app.use(router);
 
   app.mount('#app');
 };

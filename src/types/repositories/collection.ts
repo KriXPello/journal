@@ -21,6 +21,7 @@ export type PayloadCollectionUpdate = {
 
 export type RepositoryCollection = {
   getAll: () => Promise<Collection[]>;
+  getOne: (id: string) => Promise<Collection | undefined>;
   create: (data: PayloadCollectionCreate) => Promise<Collection>;
   update: (data: PayloadCollectionUpdate) => Promise<void>;
 };

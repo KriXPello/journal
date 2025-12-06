@@ -1,5 +1,6 @@
 export enum RouteName {
   Main = 'Main',
-  Collections = 'Collection',
+  Collections = 'Collections',
+  Collection = 'Collection',
   CollectionCreate = 'CollectionCreate',
 }

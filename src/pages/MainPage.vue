@@ -2,7 +2,6 @@
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import type { FoodTake } from '~/types/entities';
 import { vLongPress } from '~/directives/long-press';
-import { onLongPress } from '@vueuse/core';
 import PageHeader from '~/components/PageHeader.vue';
 
 const takes = ref<FoodTake[]>([]);

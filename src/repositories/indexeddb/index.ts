@@ -47,6 +47,10 @@ export const createIndexedDbRepositories = async () => {
       const result = await db.getAll('item-categories');
       return result;
     },
+    getOne: async (id) => {
+      const record = await db.get('item-categories', id);
+      return record;
+    },
     create: async (payload: PayloadCollectionCreate) => {
       const tx = db.transaction('item-categories', 'readwrite');
       const store = tx.objectStore('item-categories');

@@ -39,6 +39,7 @@ export default defineConfigWithVueTs(
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-explicit-any": "off",
       "@stylistic/semi": ["error", "always"],
+      "vue/html-self-closing": "off",
     },
   },
 );

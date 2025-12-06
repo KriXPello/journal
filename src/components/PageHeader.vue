@@ -14,7 +14,7 @@ defineProps<{
       title="Назад"
       @click="onBack"
     >
-      <div class="i-[mdi--chevron-left]" />
+      <div class="i-[mdi--chevron-left] size-6" />
     </button>
     <h1 class="grow text-xl font-bold">
       <slot />

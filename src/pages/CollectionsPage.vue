@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, ref } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
 import PageHeader from '~/components/PageHeader.vue';
 import { useRepositoryCollection } from '~/repositories';
 import { useDataStore } from '~/stores/data';
@@ -46,6 +46,8 @@ const router = useRouter();
 const handleCreate = () => {
   router.push({ name: RouteName.CollectionCreate });
 };
+
+const sortedCollections = computed(() => collections.value.slice().sort((a, b) => a.orderNum - b.orderNum));
 
 </script>
 
@@ -99,8 +101,22 @@ const handleCreate = () => {
           </div>
         </template>
       </PageHeader>
-      <div class="grow min-h-0">
-        <div />
+      <div class="grow min-h-0 overflow-y-auto">
+        <RouterLink
+          v-for="coll of sortedCollections" 
+          :key="coll.id"
+          v-slot="{ href, navigate }"
+          custom
+          :to="{ name: RouteName.Collection, params: { id: coll.id }}"
+        >
+          <a
+            :href="href"
+            class="p-4 border border-base-200 rounded-box flex gap-4"
+            @click="navigate"
+          >
+            <span class="text-2xl">{{ coll.label }}</span>
+          </a>
+        </RouterLink>
       </div>
     </div>
   </div>
