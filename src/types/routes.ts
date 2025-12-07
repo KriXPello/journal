@@ -3,4 +3,6 @@ export enum RouteName {
   Collections = 'Collections',
   Collection = 'Collection',
   CollectionCreate = 'CollectionCreate',
+  ItemCreate = 'ItemCreate',
+  ItemEdit = 'ItemEdit',
 }

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, type RouteLocationNamedRaw } from 'vue-router';
 import { RouteName } from '~/types/routes';
+import { useRepositoryCollection, useRepositoryItem } from './repositories';
+import { useDataStore } from './stores/data';
+import { useLoadingStore } from './stores/loading';
 
 
 type Page = {
@@ -18,6 +21,32 @@ const pages: Page[] = [
     icon: 'i-[mdi--database]',
   },
 ];
+
+const { startLoading, endLoading, isLoading } = useLoadingStore();
+const { setCollections, setItems } = useDataStore();
+
+const repoCollection = useRepositoryCollection();
+const repoItem = useRepositoryItem();
+
+const loadData = async () => {
+  startLoading();
+  try {
+    const [collections, items] = await Promise.all([
+      repoCollection.getAll(),
+      repoItem.getAll(),
+    ]);
+
+    setCollections(collections);
+    setItems(items);
+  } catch (err) {
+    // TODO: refactor
+    alert('Error: ' + String(err));
+  } finally {
+    endLoading();
+  }
+};
+
+loadData();
 
 </script>
 
@@ -48,6 +77,12 @@ const pages: Page[] = [
         </a>
       </RouterLink>
     </nav>
+    <div
+      v-show="isLoading"
+      class="absolute scale-z-200 size-full flex items-center justify-center"
+    >
+      <span class="loading loading-bars loading-xl"></span>
+    </div>
   </div>
 </template>
 

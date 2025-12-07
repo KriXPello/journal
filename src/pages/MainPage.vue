@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
-import type { FoodTake } from '~/types/entities';
-import { vLongPress } from '~/directives/long-press';
 import PageHeader from '~/components/PageHeader.vue';
+import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
+import { vLongPress } from '~/directives/long-press';
+import type { FoodTake } from '~/types/entities';
 
 const takes = ref<FoodTake[]>([]);
 
@@ -19,7 +20,7 @@ const formatTakeTotal = (value: number) => {
 };
 
 const takesTotalEnergy = computed(() => takes.value.reduce(
-  (acc, x) => acc + calculateTakeTotal(x.energy || 0, x.weight || 0), 0)
+  (acc, x) => acc + calculateTakeTotal(x.energy || 0, x.weight || 0), 0),
 );
 
 const handleAddTake = () => {
@@ -86,7 +87,9 @@ const handleDeleteSelected = () => {
 <template>
   <div class="size-full flex flex-col items-center">
     <div class="size-full max-w-xl relative flex flex-col">
-      <PageHeader>Калькулятор калорий</PageHeader>
+      <PageHeader>
+        <PageHeaderTitle title="Калькулятор калорий" />
+      </PageHeader>
       <div
         ref="takesContainer"
         class="grow pb-16 overflow-y-auto"

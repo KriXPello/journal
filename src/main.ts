@@ -1,14 +1,14 @@
-import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import { createApp } from 'vue';
 
-import '~/assets/tailwind.css';
 import '~/assets/main.css';
+import '~/assets/tailwind.css';
 
+import { createIndexedDbRepositories } from '~/repositories/indexeddb';
+import { REPOSITORY_KEY_COLLECTION } from '~/types/repositories/collection';
+import { REPOSITORY_KEY_ITEM } from '~/types/repositories/item';
 import App from './App.vue';
 import router from './router';
-import { createIndexedDbRepositories } from '~/repositories/indexeddb';
-import { REPOSITORY_KEY_ITEM } from '~/types/repositories/item';
-import { REPOSITORY_KEY_COLLECTION } from '~/types/repositories/collection';
 
 const initApp = async () => {
   const app = createApp(App);

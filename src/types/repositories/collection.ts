@@ -1,5 +1,5 @@
-import type { InjectionKey } from "vue";
-import type { Collection, CollectionFieldKind } from "~/types/entities";
+import type { InjectionKey } from 'vue';
+import type { Collection, CollectionFieldKind } from '~/types/entities';
 
 export type PayloadCollectionCreate = {
   label: string;

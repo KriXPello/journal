@@ -16,9 +16,6 @@ defineProps<{
     >
       <div class="i-[mdi--chevron-left] size-6" />
     </button>
-    <h1 class="grow text-xl font-bold">
-      <slot />
-    </h1>
-    <slot name="extra" />
+    <slot />
   </div>
 </template>

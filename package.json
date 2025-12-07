@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "lint": "eslint . --fix --cache"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix --cache"
   },
   "dependencies": {
     "@vueuse/core": "^14.1.0",
@@ -24,9 +25,10 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@iconify-json/mdi": "1.2.3",
     "@iconify/tailwind4": "1.1.0",
-    "@stylistic/eslint-plugin": "5.6.1",
+    "@stylistic/eslint-plugin": "^5.6.1",
     "@tailwindcss/vite": "4.1.17",
     "@tsconfig/node22": "22.0.2",
     "@types/node": "22.18.11",
@@ -34,14 +36,16 @@
     "@vue/eslint-config-typescript": "14.6.0",
     "@vue/tsconfig": "0.8.1",
     "daisyui": "5.5.5",
-    "eslint": "9.37.0",
+    "eslint": "^9.39.1",
     "eslint-plugin-vue": "~10.5.0",
     "jiti": "2.6.1",
     "npm-run-all2": "8.0.4",
     "tailwindcss": "4.1.17",
     "typescript": "~5.9.0",
+    "typescript-eslint": "^8.48.1",
     "vite": "7.1.11",
     "vite-plugin-vue-devtools": "8.0.3",
+    "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "3.1.1"
   }
 }

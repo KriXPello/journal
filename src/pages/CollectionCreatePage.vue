@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Draggable from 'vuedraggable';
 import PageHeader from '~/components/PageHeader.vue';
+import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { useRepositoryCollection } from '~/repositories';
 import { useDataStore } from '~/stores/data';
 import { useLoadingStore } from '~/stores/loading';
@@ -75,7 +76,7 @@ const handleSave = async () => {
       fields: fields.map(x => ({
         kind: x.kind,
         label: x.label,
-      }))
+      })),
     });
 
     setCollections(collections.value.concat(newCollection));
@@ -96,19 +97,19 @@ const handleSave = async () => {
   <div class="size-full flex flex-col items-center relative">
     <div class="size-full max-w-xl relative flex flex-col">
       <PageHeader @back="router.back()">
-        Создание коллекции
+        <PageHeaderTitle title="Создание коллекции" />
       </PageHeader>
       <div class="grow min-h-0 px-2 py-4 overflow-y-auto">
         <label class="floating-label">
           <span>Название коллекции</span>
-          <input 
+          <input
             v-model.trim="formData.label"
             class="input"
             :class="{ 'input-error': errors.label }"
             type="text"
             @input="errors.label = ''"
           >
-          <div 
+          <div
             v-if="errors.label"
             class="text-error"
           >
@@ -121,12 +122,12 @@ const handleSave = async () => {
         <div class="flex flex-col gap-2">
           <Draggable
             v-model="formData.fields"
-            class="flex flex-col gap-2" 
+            class="flex flex-col gap-2"
             handle=".drag-handle"
             item-key="key"
           >
             <template #item="{ element: field }">
-              <div 
+              <div
                 class="p-2 border border-base-200 rounded-box flex gap-4"
                 :class="{ 'border-error': errors.fields[field.key] }"
               >
@@ -136,14 +137,14 @@ const handleSave = async () => {
                 <div class="grow flex flex-col gap-2">
                   <label class="floating-label">
                     <span>Название поля</span>
-                    <input 
+                    <input
                       v-model.trim="field.label"
                       class="input w-full"
                       type="text"
                       @input="errors.fields[field.key] = ''"
                     >
                   </label>
-      
+
                   <label class="floating-label">
                     <span>Тип поля</span>
                     <select
@@ -155,12 +156,12 @@ const handleSave = async () => {
                       </option>
                     </select>
                   </label>
-  
+
                   <label class="label">
                     <input type="checkbox" :checked="field.suggestValue" class="toggle" />
                     Подсказывать значения
                   </label>
-                  <div 
+                  <div
                     v-if="errors.fields[field.key]"
                     class="text-error"
                   >

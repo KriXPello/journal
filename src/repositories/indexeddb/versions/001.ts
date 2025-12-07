@@ -1,5 +1,5 @@
-import type { DBSchema, IDBPDatabase } from "idb";
-import type { Item, Collection } from "~/types/entities";
+import type { DBSchema, IDBPDatabase } from 'idb';
+import type { Item, Collection } from '~/types/entities';
 
 export interface Schema extends DBSchema {
   items: {

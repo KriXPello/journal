@@ -19,3 +19,7 @@
 @utility input {
   @apply px-1;
 }
+
+@utility btn-header-action {
+  @apply btn btn-circle btn-ghost btn-md;
+}

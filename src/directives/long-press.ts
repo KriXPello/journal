@@ -1,4 +1,4 @@
-import type { ObjectDirective } from "vue";
+import type { ObjectDirective } from 'vue';
 
 type LongPressHandler = (event: PointerEvent) => void;
 
@@ -41,5 +41,5 @@ export const vLongPress: ObjectDirective<HTMLElement, DirectiveValue, string, nu
     el.addEventListener('pointerdown', start);
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', removeTimeout);
-  }
+  },
 };

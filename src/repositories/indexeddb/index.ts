@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import type { Item, Collection } from '~/types/entities';
-import type { RepositoryItem } from '~/types/repositories/item';
+import type { Collection, Item } from '~/types/entities';
 import type { PayloadCollectionCreate, PayloadCollectionUpdate, RepositoryCollection } from '~/types/repositories/collection';
+import type { RepositoryItem } from '~/types/repositories/item';
 import { getRandomId } from '~/utils/getRandomId';
 import * as v001 from './versions/001';
 
@@ -19,11 +19,15 @@ export const createIndexedDbRepositories = async () => {
       const result = await db.getAll('items');
       return result;
     },
+    getOne: async (id) => {
+      const record = await db.get('items', id);
+      return record;
+    },
     create: async (payload) => {
       const record: Item = {
         id: getRandomId(),
         collectionId: payload.collectionId,
-        data: payload.data,
+        data: { ...payload.data },
       };
       await db.add('items', record);
       return record;
@@ -35,10 +39,11 @@ export const createIndexedDbRepositories = async () => {
       const record: Item = {
         id: payload.id,
         collectionId: oldRecord!.collectionId,
-        data: payload.data,
+        data: { ...payload.data },
       };
       await store.put(record);
       await tx.done;
+      return record;
     },
   };
 
