@@ -11,6 +11,36 @@
     <link rel="stylesheet" crossorigin href="/journal/assets/index-Clk1bx9i.css">
   <link rel="manifest" href="/journal/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/journal/registerSW.js"></script></head>
   <body>
+    <button onclick="testPWA()">Запустить тест PWA</button>
+  
+    <script>
+    async function testPWA() {
+      const results = {}
+      
+      // 1. Проверка манифеста
+      const manifestLink = document.querySelector('link[rel="manifest"]')
+      if (manifestLink) {
+        try {
+          const res = await fetch(manifestLink.href)
+          results.manifest = await res.json()
+        } catch (e) {
+          results.manifestError = e.message
+        }
+      }
+      
+      // 2. Проверка service worker
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration()
+        results.serviceWorker = reg ? 'Зарегистрирован' : 'Не зарегистрирован'
+      }
+      
+      // 3. Проверка установки
+      results.isInstalled = window.matchMedia('(display-mode: standalone)').matches
+      
+      console.log('Результаты теста:', results)
+      alert(JSON.stringify(results, null, 2))
+    }
+    </script>
     <div id="app"></div>
   </body>
 </html>
