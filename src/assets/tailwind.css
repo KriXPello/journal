@@ -2,9 +2,17 @@
 @plugin "daisyui" {
   themes: corporate --default, business --prefersdark;
 };
+@plugin "daisyui/theme" {
+  name: "corporate";
+  default: true;
+  --color-error: var(--color-red-600);
+  --color-error-content: var(--color-white);
+}
+
 @plugin "@iconify/tailwind4" {
   prefix: "i";
 };
+
 
 @utility input-number-no-arrows {
   &::-webkit-outer-spin-button,

@@ -15,10 +15,11 @@ export const useItemSuggestions = (options: {
         if (inputValue == '' || inputValue == undefined) {
           return [];
         }
+        const searchValue = String(inputValue).toLocaleUpperCase();
         const items = toValue(itemsRaw);
         return items.filter(item => {
           const itemValue = item.data[field.id];
-          return itemValue != undefined && String(itemValue).includes(inputValue as string);
+          return itemValue != undefined && String(itemValue).toLocaleUpperCase().includes(searchValue);
         });
       });
       return [field.id, computedList];

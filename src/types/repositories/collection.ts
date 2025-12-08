@@ -6,6 +6,7 @@ export type PayloadCollectionCreate = {
   fields: Array<{
     label: string;
     kind: CollectionFieldKind;
+    suggestValue: boolean;
   }>
 };
 
@@ -16,6 +17,7 @@ export type PayloadCollectionUpdate = {
     id: string;
     label: string;
     kind: CollectionFieldKind;
+    suggestValue: boolean;
   }>
 };
 
@@ -23,7 +25,8 @@ export type RepositoryCollection = {
   getAll: () => Promise<Collection[]>;
   getOne: (id: string) => Promise<Collection | undefined>;
   create: (data: PayloadCollectionCreate) => Promise<Collection>;
-  update: (data: PayloadCollectionUpdate) => Promise<void>;
+  update: (data: PayloadCollectionUpdate) => Promise<Collection>;
+  remove: (id: string) => Promise<void>;
 };
 
 export const REPOSITORY_KEY_COLLECTION = Symbol('repo-collection') as InjectionKey<RepositoryCollection>;

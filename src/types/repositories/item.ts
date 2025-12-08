@@ -16,6 +16,7 @@ export type RepositoryItem = {
   getOne: (id: string) => Promise<Item | undefined>;
   create: (data: PayloadItemCreate) => Promise<Item>;
   update: (data: PayloadItemUpdate) => Promise<Item>;
+  remove: (id: string) => Promise<void>;
 };
 
 export const REPOSITORY_KEY_ITEM = Symbol('repo-item') as InjectionKey<RepositoryItem>;

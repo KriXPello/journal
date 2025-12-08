@@ -25,6 +25,7 @@ export type CollectionField = {
   id: string;
   label: string;
   kind: CollectionFieldKind;
+  suggestValue?: boolean;
 };
 
 export type Collection = {

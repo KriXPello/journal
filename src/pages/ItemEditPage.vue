@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ItemField from '~/components/ItemField.vue';
 import PageHeader from '~/components/PageHeader.vue';
+import PageHeaderActions from '~/components/PageHeaderActions.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { useItemSuggestions } from '~/composables/useItemSuggestions';
 import { useRepositoryItem } from '~/repositories';
@@ -52,6 +53,27 @@ const handleSave = async () => {
   }
 };
 
+const handleDelete = async (id: string) => {
+  if (!confirm('Удалить элемент?')) {
+    return;
+  }
+  startLoading();
+  try {
+    await repoItem.remove(id);
+
+    const updatedItems = allItems.value.filter(x => x.id != id);
+
+    setItems(updatedItems);
+
+    router.back();
+  } catch (err) {
+    // TODO: refactor
+    alert('Error: ' + String(err));
+  } finally {
+    endLoading();
+  }
+};
+
 </script>
 
 <template>
@@ -62,8 +84,13 @@ const handleSave = async () => {
           title="Редактирование элемента"
           :subtitle="'Коллекция: ' + collection.label"
         />
+        <PageHeaderActions>
+          <button class="btn-header-action" title="Удалить элемент" @click="handleDelete(item.id)">
+            <div class="i-[mdi--trash] text-error size-6"></div>
+          </button>
+        </PageHeaderActions>
       </PageHeader>
-      <div class="grow min-h-0 px-2 py-4 overflow-y-auto flex flex-col gap-4">
+      <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto flex flex-col gap-4">
         <ItemField
           v-for="field in collection.fields"
           :key="field.id"

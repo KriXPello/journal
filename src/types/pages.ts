@@ -4,6 +4,10 @@ export type CollectionPageProps = {
   collection: Collection;
 };
 
+export type CollectionEditPageProps = {
+  collection: Collection;
+};
+
 export type ItemCreatePageProps = {
   collection: Collection;
 };

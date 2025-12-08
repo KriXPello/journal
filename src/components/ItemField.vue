@@ -21,7 +21,7 @@ const LIST_ID = useId();
       v-model.trim="valueBind"
       class="input w-full"
       type="text"
-      :list="field.id"
+      :list="LIST_ID"
     />
     <textarea
       v-else-if="field.kind == 'textarea'"
@@ -45,7 +45,7 @@ const LIST_ID = useId();
       :list="LIST_ID"
     />
 
-    <datalist v-if="field" :id="LIST_ID">
+    <datalist v-if="field.suggestValue && suggestions" :id="LIST_ID">
       <option
         v-for="suggestionItem in suggestions"
         :key="suggestionItem.id"

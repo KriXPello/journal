@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import CollectionCreatePage from '~/pages/CollectionCreatePage.vue';
+import CollectionEditPage from '~/pages/CollectionEditPage.vue';
 import CollectionPage from '~/pages/CollectionPage.vue';
 import CollectionsPage from '~/pages/CollectionsPage.vue';
 import ItemCreatePage from '~/pages/ItemCreatePage.vue';
 import ItemEditPage from '~/pages/ItemEditPage.vue';
 import MainPage from '~/pages/MainPage.vue';
 import { useRepositoryCollection, useRepositoryItem } from '~/repositories';
-import type { CollectionPageProps, ItemCreatePageProps, ItemEditPageProps } from '~/types/pages';
+import type { CollectionEditPageProps, CollectionPageProps, ItemCreatePageProps, ItemEditPageProps } from '~/types/pages';
 import { RouteName } from '~/types/routes';
 
 const router = createRouter({
@@ -48,6 +49,24 @@ const router = createRouter({
               return { name: RouteName.Collections };
             }
             const props: CollectionPageProps = {
+              collection,
+            };
+            to.meta.data = props;
+          },
+        },
+        {
+          path: 'edit',
+          name: RouteName.CollectionEdit,
+          component: CollectionEditPage,
+          props: (to) => to.meta.data,
+          beforeEnter: async (to) => {
+            const repoCollection = useRepositoryCollection();
+            const collection = await repoCollection.getOne(to.params.collectionId as string);
+            if (collection == undefined) {
+              // TODO: log
+              return { name: RouteName.Collections };
+            }
+            const props: CollectionEditPageProps = {
               collection,
             };
             to.meta.data = props;

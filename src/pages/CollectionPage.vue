@@ -62,6 +62,10 @@ const searchedItems = computed(() => {
   return filteredList;
 });
 
+const handleSettings = () => {
+  router.push({ name: RouteName.CollectionEdit, params: { collectionId: collection.id } });
+};
+
 </script>
 
 <template>
@@ -77,13 +81,13 @@ const searchedItems = computed(() => {
           >
             <div class="i-[mdi--refresh] size-6" />
           </button>
-          <!-- <button
-              class="btn-header-action"
-              title="Настройки"
-              @click="handleSettings"
-            >
-              <div class="i-[mdi--cog] size-6" />
-            </button> -->
+          <button
+            class="btn-header-action"
+            title="Настройки"
+            @click="handleSettings"
+          >
+            <div class="i-[mdi--cog] size-6" />
+          </button>
         </PageHeaderActions>
       </PageHeader>
 
@@ -110,7 +114,7 @@ const searchedItems = computed(() => {
         </label>
       </div>
 
-      <div class="grow min-h-0 mt-4 overflow-y-auto flex flex-col gap-2">
+      <div class="grow min-h-0 mt-4 pb-20 overflow-y-auto flex flex-col gap-2">
         <RouterLink
           v-for="item of searchedItems"
           :key="item.id"
@@ -123,15 +127,16 @@ const searchedItems = computed(() => {
             class="p-4 border border-base-200 rounded-box flex flex-col text-sm/5 hover:bg-base-200"
             @click="navigate"
           >
-            <div
-              v-for="field in collection.fields"
-              :key="field.id"
-              class="flex gap-1"
-            >
-              <span class="font-bold">{{ field.label }}:</span>
-              <span class="line-clamp-2">{{ item.data[field.id] }}</span>
-              <br>
-            </div>
+            <template v-for="field in collection.fields" :key="field.id">
+              <div
+                v-if="item.data[field.id]"
+                class="flex gap-1"
+              >
+                <span class="font-bold">{{ field.label }}:</span>
+                <span class="line-clamp-2">{{ item.data[field.id] }}</span>
+                <br>
+              </div>
+            </template>
           </a>
         </RouterLink>
       </div>

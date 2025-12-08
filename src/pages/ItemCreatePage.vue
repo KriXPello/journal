@@ -59,7 +59,7 @@ const handleSave = async () => {
           :subtitle="'Коллекция: ' + collection.label"
         />
       </PageHeader>
-      <div class="grow min-h-0 px-2 py-4 overflow-y-auto flex flex-col gap-4">
+      <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto flex flex-col gap-4">
         <ItemField
           v-for="field in collection.fields"
           :key="field.id"

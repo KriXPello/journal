@@ -45,6 +45,9 @@ export const createIndexedDbRepositories = async () => {
       await tx.done;
       return record;
     },
+    remove: async (id) => {
+      await db.delete('items', id);
+    },
   };
 
   const collection: RepositoryCollection = {
@@ -90,10 +93,16 @@ export const createIndexedDbRepositories = async () => {
           id: f.id,
           label: f.label,
           kind: f.kind,
+          suggestValue: f.suggestValue,
         })),
       };
       await store.put(record);
       await tx.done;
+      return record;
+    },
+    remove: async (id) => {
+      await db.delete('item-categories', id);
+      // TODO: delete all items of collection
     },
   };
 
