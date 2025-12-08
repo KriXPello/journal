@@ -96,10 +96,12 @@ const handleSave = async () => {
       }
     }
 
+    const fieldsToSave = fields.filter(x => !keysToRemove.value.has(x.key));
+
     const updatedCollection = await repoCollection.update({
       id: collection.id,
       label,
-      fields: fields.map(x => ({
+      fields: fieldsToSave.map(x => ({
         id: x.key,
         kind: x.kind,
         label: x.label,
