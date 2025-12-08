@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, type RouteLocationNamedRaw } from 'vue-router';
 import { RouteName } from '~/types/routes';
+import InstallButton from './components/InstallButton.vue';
 import { useRepositoryCollection, useRepositoryItem } from './repositories';
 import { useDataStore } from './stores/data';
 import { useLoadingStore } from './stores/loading';
@@ -76,6 +77,7 @@ loadData();
           <div v-if="isActive" class="absolute bottom-2 inset-x-2 h-1 rounded-full bg-accent" />
         </a>
       </RouterLink>
+      <InstallButton />
     </nav>
     <div
       v-show="isLoading"

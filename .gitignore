@@ -13,6 +13,7 @@ dist
 dist-ssr
 coverage
 *.local
+ssl
 
 # Editor directories and files
 .vscode/*

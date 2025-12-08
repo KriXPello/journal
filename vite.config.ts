@@ -1,4 +1,6 @@
+import fs from 'fs';
 import { fileURLToPath, URL } from 'node:url';
+import path from 'path';
 
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
@@ -21,12 +23,12 @@ export default defineConfig({
         theme_color: '#ffffff',
         icons: [
           {
-            "src": "android-chrome-192x192.png",
+            "src": "pwa-192x192.png",
             "sizes": "192x192",
             "type": "image/png"
           },
           {
-            "src": "android-chrome-512x512.png",
+            "src": "pwa-512x512.png",
             "sizes": "512x512",
             "type": "image/png"
           },
@@ -39,4 +41,19 @@ export default defineConfig({
       '~': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  base: '/journal/',
+  server: {
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, 'ssl/key.pem')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/cert.pem'))
+    },
+    host: true
+  },
+  preview: {
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, 'ssl/key.pem')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/cert.pem'))
+    },
+    host: true
+  }
 });
