@@ -5,8 +5,8 @@ const search = (inputValue: string, field: CollectionField, items: Item[]): Sugg
   if (inputValue == undefined) {
     return [];
   }
-  inputValue = String(inputValue).toLocaleUpperCase().trim();
-  if (inputValue == '') {
+  const searchValueUpper = String(inputValue).toLocaleUpperCase().trim();
+  if (searchValueUpper == '') {
     return [];
   }
 
@@ -18,14 +18,15 @@ const search = (inputValue: string, field: CollectionField, items: Item[]): Sugg
     if (value == undefined) {
       continue;
     }
-    const strValue = String(value).trim().toLocaleUpperCase();
-    if (strValue == '' || usedValues.has(strValue)) {
+    const itemValueStr = String(value).trim();
+    if (itemValueStr == '' || usedValues.has(itemValueStr)) {
       continue;
     }
-    usedValues.add(strValue);
-    if (strValue.includes(inputValue)) {
+    usedValues.add(itemValueStr);
+    const itemValueStrUpper = itemValueStr.toLocaleUpperCase();
+    if (itemValueStrUpper.includes(searchValueUpper)) {
       suggestions.push({
-        text: strValue,
+        text: itemValueStr,
         key: item.id,
       });
     }
