@@ -1,6 +1,4 @@
-import fs from 'fs';
 import { fileURLToPath, URL } from 'node:url';
-import path from 'path';
 
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
@@ -42,18 +40,18 @@ export default defineConfig({
     },
   },
   base: '/journal/',
-  server: {
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, 'ssl/key.pem')),
-      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/cert.pem'))
-    },
-    host: true
-  },
-  preview: {
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, 'ssl/key.pem')),
-      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/cert.pem'))
-    },
-    host: true
-  }
+  // server: {
+  //   https: {
+  //     key: fs.readFileSync(path.resolve(__dirname, 'ssl/key.pem')),
+  //     cert: fs.readFileSync(path.resolve(__dirname, 'ssl/cert.pem'))
+  //   },
+  //   host: true
+  // },
+  // preview: {
+  //   https: {
+  //     key: fs.readFileSync(path.resolve(__dirname, 'ssl/key.pem')),
+  //     cert: fs.readFileSync(path.resolve(__dirname, 'ssl/cert.pem'))
+  //   },
+  //   host: true
+  // }
 });

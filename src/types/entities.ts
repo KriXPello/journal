@@ -40,3 +40,8 @@ export type Item = {
   collectionId: string;
   data: Record<CollectionField['id'], unknown>;
 };
+
+export type Suggestion = {
+  text: string;
+  key: string;
+};

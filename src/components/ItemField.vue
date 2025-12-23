@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useId } from 'vue';
-import type { CollectionField, Item } from '~/types/entities';
+import type { CollectionField, Suggestion } from '~/types/entities';
 
 const p = defineProps<{
   field: CollectionField;
-  suggestions: Item[] | undefined;
+  suggestions: Suggestion[] | undefined;
 }>();
 
 const valueBind = defineModel<any>('value', { required: true });
@@ -47,9 +47,9 @@ const LIST_ID = useId();
 
     <datalist v-if="field.suggestValue && suggestions" :id="LIST_ID">
       <option
-        v-for="suggestionItem in suggestions"
-        :key="suggestionItem.id"
-        :value="suggestionItem.data[field.id]"
+        v-for="suggestion in suggestions"
+        :key="suggestion.key"
+        :value="suggestion.text"
       ></option>
     </datalist>
   </label>
