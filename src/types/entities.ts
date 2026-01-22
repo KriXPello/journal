@@ -1,9 +1,30 @@
+export type DateObject = {
+  year: number;
+  /** 1-12 */
+  month: number;
+  day: number;
+};
+
+export namespace DateObject {
+  export const fromDate = (date: Date): DateObject => {
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+    };
+  };
+}
+
 export type FoodTake = {
   id: string;
   energy: number;
   weight: number;
-  dateISO: string;
   label: string;
+};
+
+export type FoodTakeGroup = {
+  date: DateObject;
+  takes: FoodTake[];
 };
 
 export const COLLECTION_FIELD_KINDS = [

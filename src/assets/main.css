@@ -3,3 +3,8 @@ html, body, #app {
   height: 100%;
   overflow: hidden;
 }
+
+/* исправление размера компонента из @vuepic/vue-datepicker */
+.dp__outer_menu_wrap {
+  width: 100% !important;
+}

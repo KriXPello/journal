@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="px-1 py-2 flex flex-row items-center">
+  <div class="px-2 py-2 flex flex-row items-center">
     <button
       v-if="onBack"
       class="btn btn-circle btn-ghost mr-4"

@@ -1,11 +1,66 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef } from 'vue';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
+import { ru } from 'date-fns/locale';
+import { computed, nextTick, ref, toRaw, useTemplateRef, watch } from 'vue';
 import PageHeader from '~/components/PageHeader.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { vLongPress } from '~/directives/long-press';
-import type { FoodTake } from '~/types/entities';
+import { useRepositoryFoodTake } from '~/repositories';
+import { useLoadingStore } from '~/stores/loading';
+import { DateObject, type FoodTake } from '~/types/entities';
+
+const repoFoodTake = useRepositoryFoodTake();
+
+const { startLoading, endLoading } = useLoadingStore();
+
+const selectedDate = ref(new Date());
 
 const takes = ref<FoodTake[]>([]);
+
+const loadTakes = async (date: Date) => {
+  const dateObject = DateObject.fromDate(date);
+  startLoading();
+  try {
+    const group = await repoFoodTake.getGroupByDate(dateObject);
+    if (group) {
+      takes.value = group.takes;
+    } else {
+      takes.value = [];
+    }
+  } finally {
+    endLoading();
+  }
+};
+
+watch(selectedDate, (newDate) => loadTakes(newDate), { immediate: true });
+
+const saveTakes = async (date: Date, list: FoodTake[]) => {
+  console.log('save takes');
+  list = toRaw(list);
+  const dateObject = DateObject.fromDate(date);
+  startLoading();
+  try {
+    await repoFoodTake.createOrUpdateGroup({ date: dateObject, takes: list });
+  } finally {
+    endLoading();
+  }
+};
+
+const debounceTimeoutByDate = new Map<string, number>();
+const saveTakesWithDebounce = (date: Date, list: FoodTake[]) => {
+  const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  if (debounceTimeoutByDate.has(key)) {
+    clearTimeout(debounceTimeoutByDate.get(key));
+  }
+  const timeout = setTimeout(() => {
+    saveTakes(date, list);
+  }, 500);
+  debounceTimeoutByDate.set(key, timeout);
+};
+
+const sheduleSave = () => {
+  saveTakesWithDebounce(selectedDate.value, takes.value);
+};
 
 const takesContainer = useTemplateRef('takesContainer');
 const energyInputs = useTemplateRef('energyInputs');
@@ -26,13 +81,13 @@ const takesTotalEnergy = computed(() => takes.value.reduce(
 const handleAddTake = () => {
   const take: FoodTake = {
     id: String(Date.now()) + Math.random(),
-    dateISO: new Date().toISOString(),
     energy: 0,
     weight: 100,
     label: '',
   };
 
   takes.value.push(take);
+  sheduleSave();
   nextTick(() => {
     const newInput = energyInputs.value?.find(x => x.dataset['takeId'] == take.id);
     newInput?.select();
@@ -80,8 +135,34 @@ const handleDeleteSelected = () => {
     const selectedSet = selectedTakesIds.value;
     takes.value = takes.value.filter(x => !selectedSet.has(x.id));
     selectedTakesIds.value.clear();
+    sheduleSave();
   }
 };
+
+const dateModal = useTemplateRef('dateModal');
+const showDateModal = () => {
+  dateModal.value?.showModal();
+};
+const closeDateModal = () => {
+  dateModal.value?.close();
+};
+
+const handleCalendarChange = (date: Date) => {
+  selectedDate.value = date;
+  closeDateModal();
+};
+
+const handlePrevDate = () => {
+  handleCalendarChange(new Date(Number(selectedDate.value) - 86400000));
+};
+
+const handleNextDate = () => {
+  handleCalendarChange(new Date(Number(selectedDate.value) + 86400000));
+};
+
+const readableSelectedDate = computed(() => {
+  return selectedDate.value.toLocaleDateString();
+});
 </script>
 
 <template>
@@ -90,6 +171,40 @@ const handleDeleteSelected = () => {
       <PageHeader>
         <PageHeaderTitle title="Калькулятор калорий" />
       </PageHeader>
+      <div class="px-2">
+        <div class="flex items-center justify-center gap-6">
+          <button class="btn btn-ghost btn-circle" @click="handlePrevDate">
+            <div class="i-[mdi--skip-previous] size-6"></div>
+          </button>
+
+          <a class="link link-accent ml-1" @click="showDateModal()">{{ readableSelectedDate }}</a>
+
+          <button class="btn btn-ghost btn-circle" @click="handleNextDate">
+            <div class="i-[mdi--skip-next] size-6"></div>
+          </button>
+        </div>
+        <dialog ref="dateModal" class="modal modal-bottom sm:modal-middle">
+          <div class="modal-box p-2">
+            <div class="flex flex-row items-center justify-between">
+              <h3 class="text-lg font-bold">Выбор даты</h3>
+              <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost" @click="closeDateModal()">✕</button>
+              </form>
+            </div>
+
+            <VueDatePicker
+              :model-value="selectedDate"
+              class="w-full mt-2"
+              inline
+              auto-apply
+              :locale="ru"
+              :time-config="{ enableTimePicker: false }"
+              :ui="{ menu: 'w-full' }"
+              @update:model-value="handleCalendarChange"
+            />
+          </div>
+        </dialog>
+      </div>
       <div
         ref="takesContainer"
         class="grow pb-16 overflow-y-auto"
@@ -129,6 +244,7 @@ const handleDeleteSelected = () => {
                   class="input input-xs input-number-no-arrows select-auto"
                   min="0"
                   :data-take-id="take.id"
+                  @input="sheduleSave"
                 >
               </td>
               <td>
@@ -137,6 +253,7 @@ const handleDeleteSelected = () => {
                   type="number"
                   class="input input-xs input-number-no-arrows select-auto"
                   min="0"
+                  @input="sheduleSave"
                 >
               </td>
               <td>{{ formatTakeTotal(calculateTakeTotal(take.energy, take.weight)) }}</td>
@@ -145,6 +262,7 @@ const handleDeleteSelected = () => {
                   v-model="take.label"
                   type="text"
                   class="input input-xs select-auto"
+                  @input="sheduleSave"
                 >
               </td>
             </tr>

@@ -1,15 +1,21 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import type { Collection, Item } from '~/types/entities';
+import type { Collection, DateObject, Item } from '~/types/entities';
 import type { PayloadCollectionCreate, PayloadCollectionUpdate, RepositoryCollection } from '~/types/repositories/collection';
+import type { RepositoryFoodTake } from '~/types/repositories/food-take';
 import type { RepositoryItem } from '~/types/repositories/item';
 import { getRandomId } from '~/utils/getRandomId';
 import * as v001 from './versions/001';
+import type { FoodTakeKey, StoredFoodTakeGroup } from './versions/002';
+import * as v002 from './versions/002';
 
 export const createIndexedDbRepositories = async () => {
-  const db = await openDB<v001.Schema>('app-db', 1, {
+  const db = await openDB<v002.Schema>('app-db', 2, {
     upgrade: (database, oldVersion) => {
       if (oldVersion < 1) {
         v001.upgrade(database as IDBPDatabase<unknown>);
+      }
+      if (oldVersion < 2) {
+        v002.upgrade(database as IDBPDatabase<unknown>);
       }
     },
   });
@@ -106,8 +112,36 @@ export const createIndexedDbRepositories = async () => {
     },
   };
 
+  const createFoodTakeKey = (date: DateObject): FoodTakeKey => {
+    return `${date.year}-${date.month}-${date.day}`;
+  };
+  const foodTake: RepositoryFoodTake = {
+    getGroupByDate: async (date) => {
+      const key = createFoodTakeKey(date);
+      const result = await db.get('food-takes', key);
+      if (result == undefined) {
+        return undefined;
+      }
+      return {
+        date: result.date,
+        takes: result.takes,
+      };
+    },
+    createOrUpdateGroup: async (payload) => {
+      const key = createFoodTakeKey(payload.date);
+      const record: StoredFoodTakeGroup = {
+        key: key,
+        date: payload.date,
+        takes: payload.takes,
+      };
+      await db.put('food-takes', record);
+      return record;
+    },
+  };
+
   return {
     item,
     collection,
+    foodTake,
   };
 };

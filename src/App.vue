@@ -56,7 +56,7 @@ loadData();
     <div class="grow min-h-0 w-full">
       <RouterView />
     </div>
-    <nav class="flex justify-center gap-8 border-t border-t-base-200">
+    <nav class="flex items-center justify-center gap-8 border-t border-t-base-200">
       <RouterLink
         v-for="page, index in pages"
         :key="index"
@@ -81,10 +81,23 @@ loadData();
     </nav>
     <div
       v-show="isLoading"
-      class="absolute scale-z-200 size-full flex items-center justify-center"
+      class="absolute scale-z-200 size-full flex items-center justify-center animate"
     >
-      <span class="loading loading-bars loading-xl"></span>
+      <span class="loading loading-bars loading-xl loading-delayed"></span>
     </div>
   </div>
 </template>
 
+<style scoped>
+.loading-delayed {
+  animation-name: showLoader;
+  animation-duration: 0ms;
+  animation-delay: 300ms;
+  animation-fill-mode: forwards;
+}
+
+@keyframes showLoader {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>
