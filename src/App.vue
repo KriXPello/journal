@@ -90,6 +90,7 @@ loadData();
 
 <style scoped>
 .loading-delayed {
+  opacity: 0;
   animation-name: showLoader;
   animation-duration: 0ms;
   animation-delay: 300ms;
@@ -97,7 +98,6 @@ loadData();
 }
 
 @keyframes showLoader {
-  from { opacity: 0; }
   to { opacity: 1; }
 }
 </style>

@@ -2,12 +2,13 @@
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import { ru } from 'date-fns/locale';
 import { computed, nextTick, ref, toRaw, useTemplateRef, watch } from 'vue';
+import CalculatorControls from '~/components/CalculatorControls.vue';
 import PageHeader from '~/components/PageHeader.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { vLongPress } from '~/directives/long-press';
 import { useRepositoryFoodTake } from '~/repositories';
 import { useLoadingStore } from '~/stores/loading';
-import { DateObject, type FoodTake } from '~/types/entities';
+import { CALCULATOR_OPERATIONS, DateObject, isCalculatorAction, isCalculatorOperand, isCalculatorOperation, type CalculatorExpression, type CalculatorInputValue, type FoodTake } from '~/types/entities';
 
 const repoFoodTake = useRepositoryFoodTake();
 
@@ -163,6 +164,50 @@ const handleNextDate = () => {
 const readableSelectedDate = computed(() => {
   return selectedDate.value.toLocaleDateString();
 });
+
+type LastTokenType = 'none' | 'number' | 'operator';
+type ExpressionFSM = {
+  expression: CalculatorExpression;
+  lastTokenType: LastTokenType;
+};
+
+const expressionFsm = ref<ExpressionFSM>({
+  expression: [],
+  lastTokenType: 'none',
+});
+
+type InputPredicate = (value: CalculatorInputValue) => boolean;
+type Action = (context: ExpressionFSM, value: CalculatorInputValue) => boolean;
+
+const transitions: Record<LastTokenType, Action[]> = {
+  'none': [
+    ({ expression, lastTokenType }, value) => {
+      if (isCalculatorOperand(value)) {
+        // TODO
+      }
+    },
+  ],
+};
+
+const handleCalculatorInput = (value: CalculatorInputValue) => {
+  const { expression, lastTokenType } = expressionFsm.value;
+
+  if (isCalculatorAction(value)) {
+    // TODO:
+  }
+
+  const isOperand = isCalculatorOperand(value);
+  const isOperation = isCalculatorOperation(value);
+
+
+  if (lastTokenType == 'none') {
+    // TODO
+  }
+
+  // TODO
+};
+
+
 </script>
 
 <template>
@@ -269,6 +314,10 @@ const readableSelectedDate = computed(() => {
           </tbody>
         </table>
       </div>
+
+      <CalculatorControls
+        @input=""
+      />
 
       <div
         v-if="selectedTakesIds.size"
