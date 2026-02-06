@@ -4,8 +4,7 @@ import { RouteName } from '~/types/routes';
 import InstallButton from './components/InstallButton.vue';
 import { useRepositoryCollection, useRepositoryItem } from './repositories';
 import { useDataStore } from './stores/data';
-import { useLoadingStore } from './stores/loading';
-
+import { useLoading } from '~/shared/lib/loading';
 
 type Page = {
   to: RouteLocationNamedRaw;
@@ -23,7 +22,7 @@ const pages: Page[] = [
   },
 ];
 
-const { startLoading, endLoading, isLoading } = useLoadingStore();
+const { startLoading, endLoading, isLoading } = useLoading();
 const { setCollections, setItems } = useDataStore();
 
 const repoCollection = useRepositoryCollection();

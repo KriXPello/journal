@@ -8,7 +8,7 @@ import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { useItemSuggestions } from '~/composables/useItemSuggestions';
 import { useRepositoryItem } from '~/repositories';
 import { useDataStore } from '~/stores/data';
-import { useLoadingStore } from '~/stores/loading';
+import { useLoading } from '~/shared/lib/loading';
 import type { ItemEditPageProps } from '~/types/pages';
 
 const { collection, item } = defineProps<ItemEditPageProps>();
@@ -26,7 +26,7 @@ const { suggestions } = useItemSuggestions({
   items: collectionItems,
 });
 
-const { startLoading, endLoading } = useLoadingStore();
+const { startLoading, endLoading } = useLoading();
 
 const repoItem = useRepositoryItem();
 

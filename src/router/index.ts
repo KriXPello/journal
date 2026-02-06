@@ -5,7 +5,7 @@ import CollectionPage from '~/pages/CollectionPage.vue';
 import CollectionsPage from '~/pages/CollectionsPage.vue';
 import ItemCreatePage from '~/pages/ItemCreatePage.vue';
 import ItemEditPage from '~/pages/ItemEditPage.vue';
-import MainPage from '~/pages/MainPage.vue';
+import { CalculationPage } from '~/pages/calculation';
 import { useRepositoryCollection, useRepositoryItem } from '~/repositories';
 import type { CollectionEditPageProps, CollectionPageProps, ItemCreatePageProps, ItemEditPageProps } from '~/types/pages';
 import { RouteName } from '~/types/routes';
@@ -16,7 +16,7 @@ const router = createRouter({
     {
       path: '/',
       name: RouteName.Main,
-      component: MainPage,
+      component: CalculationPage,
     },
     {
       path: '/collections',

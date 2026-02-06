@@ -7,7 +7,7 @@ import PageHeaderActions from '~/components/PageHeaderActions.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { useRepositoryCollection } from '~/repositories';
 import { useDataStore } from '~/stores/data';
-import { useLoadingStore } from '~/stores/loading';
+import { useLoading } from '~/shared/lib/loading';
 import { COLLECTION_FIELD_KIND_NAMES, COLLECTION_FIELD_KINDS, type CollectionFieldKind } from '~/types/entities';
 import type { CollectionEditPageProps } from '~/types/pages';
 import { RouteName } from '~/types/routes';
@@ -77,7 +77,7 @@ const validate = () => {
   return isValid;
 };
 
-const { startLoading, endLoading } = useLoadingStore();
+const { startLoading, endLoading } = useLoading();
 const { collections, setCollections } = useDataStore();
 
 const repoCollection = useRepositoryCollection();

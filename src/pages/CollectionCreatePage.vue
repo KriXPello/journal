@@ -5,8 +5,8 @@ import Draggable from 'vuedraggable';
 import PageHeader from '~/components/PageHeader.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { useRepositoryCollection } from '~/repositories';
+import { useLoading } from '~/shared/lib/loading';
 import { useDataStore } from '~/stores/data';
-import { useLoadingStore } from '~/stores/loading';
 import { COLLECTION_FIELD_KIND_NAMES, COLLECTION_FIELD_KINDS, type CollectionFieldKind } from '~/types/entities';
 import { RouteName } from '~/types/routes';
 import { getRandomId } from '~/utils/getRandomId';
@@ -58,7 +58,7 @@ const validate = () => {
   return isValid;
 };
 
-const { startLoading, endLoading } = useLoadingStore();
+const { startLoading, endLoading } = useLoading();
 const { collections, setCollections } = useDataStore();
 
 const repoCollection = useRepositoryCollection();

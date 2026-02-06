@@ -1,6 +1,6 @@
 import { inject, type InjectionKey } from 'vue';
 import { REPOSITORY_KEY_COLLECTION } from '~/types/repositories/collection';
-import { REPOSITORY_KEY_FOOD_TAKE } from '~/types/repositories/food-take';
+import { REPOSITORY_KEY_CALCULATION_DAY } from '~/types/repositories/calculation-day';
 import { REPOSITORY_KEY_ITEM } from '~/types/repositories/item';
 
 const useRepository = <T>(key: InjectionKey<T>): T => {
@@ -13,4 +13,4 @@ const useRepository = <T>(key: InjectionKey<T>): T => {
 
 export const useRepositoryItem = () => useRepository(REPOSITORY_KEY_ITEM);
 export const useRepositoryCollection = () => useRepository(REPOSITORY_KEY_COLLECTION);
-export const useRepositoryFoodTake = () => useRepository(REPOSITORY_KEY_FOOD_TAKE);
+export const useRepositoryCalculationDay = () => useRepository(REPOSITORY_KEY_CALCULATION_DAY);

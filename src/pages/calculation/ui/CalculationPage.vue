@@ -1,39 +1,43 @@
 <script setup lang="ts">
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import { ru } from 'date-fns/locale';
-import { computed, nextTick, ref, toRaw, useTemplateRef, watch } from 'vue';
-import CalculatorControls from '~/components/CalculatorControls.vue';
+import { computed, ref, toRaw, useTemplateRef, watch } from 'vue';
 import PageHeader from '~/components/PageHeader.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
-import { vLongPress } from '~/directives/long-press';
-import { useRepositoryFoodTake } from '~/repositories';
-import { useLoadingStore } from '~/stores/loading';
-import { CALCULATOR_OPERATIONS, DateObject, isCalculatorAction, isCalculatorOperand, isCalculatorOperation, type CalculatorExpression, type CalculatorInputValue, type FoodTake } from '~/types/entities';
+import { useRepositoryCalculationDay } from '~/repositories';
+import { useBindLoading } from '~/shared/lib/loading';
+import { DateObject, type FoodTake } from '~/types/entities';
+import { useCalculationDay } from '../model/useCalculationDay';
+import { useCalculatorInput } from '../model/useCalculatorInput';
+import CalculatorControls from './CalculatorControls.vue';
+import { useCalculationDaySave } from '~/pages/calculation/model/useCalculationDaySave';
 
-const repoFoodTake = useRepositoryFoodTake();
-
-const { startLoading, endLoading } = useLoadingStore();
+const repoFoodTake = useRepositoryCalculationDay();
 
 const selectedDate = ref(new Date());
 
-const takes = ref<FoodTake[]>([]);
+const {
+  calculationDay,
+  error: calculationDayError,
+  isLoading: calculationDayLoading,
+  loadCalculationDay,
+} = useCalculationDay();
 
-const loadTakes = async (date: Date) => {
-  const dateObject = DateObject.fromDate(date);
-  startLoading();
-  try {
-    const group = await repoFoodTake.getGroupByDate(dateObject);
-    if (group) {
-      takes.value = group.takes;
-    } else {
-      takes.value = [];
-    }
-  } finally {
-    endLoading();
+useBindLoading(calculationDayLoading);
+
+watch(selectedDate, (newDate) => {
+  const activeDay = calculationDay.value;
+  if (activeDay && DateObject.isEqual(activeDay.date, DateObject.fromDate(newDate))) {
+    return;
   }
-};
+  loadCalculationDay(newDate);
+}, { immediate: true });
 
-watch(selectedDate, (newDate) => loadTakes(newDate), { immediate: true });
+const {
+  error: saveCalculationDayError,
+  isLoading: saveCalculationDayLoading,
+  saveCalculationDay,
+} = useCalculationDaySave();
 
 const saveTakes = async (date: Date, list: FoodTake[]) => {
   console.log('save takes');
@@ -41,7 +45,7 @@ const saveTakes = async (date: Date, list: FoodTake[]) => {
   const dateObject = DateObject.fromDate(date);
   startLoading();
   try {
-    await repoFoodTake.createOrUpdateGroup({ date: dateObject, takes: list });
+    await repoFoodTake.createOrUpdate({ date: dateObject, takes: list });
   } finally {
     endLoading();
   }
@@ -64,7 +68,6 @@ const sheduleSave = () => {
 };
 
 const takesContainer = useTemplateRef('takesContainer');
-const energyInputs = useTemplateRef('energyInputs');
 
 const calculateTakeTotal = (kkal: number, weightGramm: number) => {
   return kkal * weightGramm / 100;
@@ -78,27 +81,6 @@ const formatTakeTotal = (value: number) => {
 const takesTotalEnergy = computed(() => takes.value.reduce(
   (acc, x) => acc + calculateTakeTotal(x.energy || 0, x.weight || 0), 0),
 );
-
-const handleAddTake = () => {
-  const take: FoodTake = {
-    id: String(Date.now()) + Math.random(),
-    energy: 0,
-    weight: 100,
-    label: '',
-  };
-
-  takes.value.push(take);
-  sheduleSave();
-  nextTick(() => {
-    const newInput = energyInputs.value?.find(x => x.dataset['takeId'] == take.id);
-    newInput?.select();
-
-    const container = takesContainer.value;
-    if (container) {
-      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-    }
-  });
-};
 
 const selectedTakesIds = ref(new Set<string>());
 
@@ -165,47 +147,18 @@ const readableSelectedDate = computed(() => {
   return selectedDate.value.toLocaleDateString();
 });
 
-type LastTokenType = 'none' | 'number' | 'operator';
-type ExpressionFSM = {
-  expression: CalculatorExpression;
-  lastTokenType: LastTokenType;
-};
+const activeInputRef = useTemplateRef<HTMLTextAreaElement>('activeInputRef');
 
-const expressionFsm = ref<ExpressionFSM>({
-  expression: [],
-  lastTokenType: 'none',
+const { expression, handleCalculatorInput } = useCalculatorInput({
+  getCursorPosIndex: () => activeInputRef.value?.selectionEnd || 0,
+  setCursorPosIndex: (index) => {
+    const input = activeInputRef.value;
+    if (input) {
+      input.focus(); // required
+      input.setSelectionRange(index, index);
+    }
+  },
 });
-
-type InputPredicate = (value: CalculatorInputValue) => boolean;
-type Action = (context: ExpressionFSM, value: CalculatorInputValue) => boolean;
-
-const transitions: Record<LastTokenType, Action[]> = {
-  'none': [
-    ({ expression, lastTokenType }, value) => {
-      if (isCalculatorOperand(value)) {
-        // TODO
-      }
-    },
-  ],
-};
-
-const handleCalculatorInput = (value: CalculatorInputValue) => {
-  const { expression, lastTokenType } = expressionFsm.value;
-
-  if (isCalculatorAction(value)) {
-    // TODO:
-  }
-
-  const isOperand = isCalculatorOperand(value);
-  const isOperation = isCalculatorOperation(value);
-
-
-  if (lastTokenType == 'none') {
-    // TODO
-  }
-
-  // TODO
-};
 
 
 </script>
@@ -252,73 +205,23 @@ const handleCalculatorInput = (value: CalculatorInputValue) => {
       </div>
       <div
         ref="takesContainer"
-        class="grow pb-16 overflow-y-auto"
+        class="grow-4 overflow-y-auto"
       >
-        <table class="table table-pin-rows table-sm">
-          <thead>
-            <tr>
-              <th class="w-20">
-                ккал/<br>100г.
-              </th>
-              <th class="w-20">
-                вес,<br>грамм
-              </th>
-              <th>
-                всего,<br>ккал
-              </th>
-              <th>
-                продукт
-              </th>
-            </tr>
-          </thead>
-          <tbody class="select-none">
-            <tr
-              v-for="take in takes"
-              :key="take.id"
-              v-long-press="{
-                onClick: () => handleClickRow(take.id),
-                onLongPress: () => handleLongPressRow(take.id),
-              }"
-              :class="{ 'bg-accent/20': selectedTakesIds.has(take.id) }"
-            >
-              <td>
-                <input
-                  ref="energyInputs"
-                  v-model.number="take.energy"
-                  type="number"
-                  class="input input-xs input-number-no-arrows select-auto"
-                  min="0"
-                  :data-take-id="take.id"
-                  @input="sheduleSave"
-                >
-              </td>
-              <td>
-                <input
-                  v-model.number="take.weight"
-                  type="number"
-                  class="input input-xs input-number-no-arrows select-auto"
-                  min="0"
-                  @input="sheduleSave"
-                >
-              </td>
-              <td>{{ formatTakeTotal(calculateTakeTotal(take.energy, take.weight)) }}</td>
-              <td>
-                <input
-                  v-model="take.label"
-                  type="text"
-                  class="input input-xs select-auto"
-                  @input="sheduleSave"
-                >
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <textarea
+
+          ref="activeInputRef"
+          v-model="expression"
+          class="textarea resize-none"
+          inputmode="none"
+        />
       </div>
 
       <CalculatorControls
-        @input=""
+        class="grow-6"
+        @input="handleCalculatorInput"
       />
 
+      <!-- TODO: remove/refactor -->
       <div
         v-if="selectedTakesIds.size"
         class="absolute z-2 w-full px-2 py-1 flex gap-4 items-center bg-base-200 rounded-b-box shadow-lg"
@@ -346,14 +249,11 @@ const handleCalculatorInput = (value: CalculatorInputValue) => {
         </button>
       </div>
 
-      <div class="absolute z-2 bottom-0 left-0 w-full p-4 flex justify-between items-center">
+      <!-- <div class="absolute z-2 bottom-0 left-0 w-full p-4 flex justify-between items-center">
         <div class="badge badge-lg badge-info">
           {{ formatTakeTotal(takesTotalEnergy) }}
         </div>
-        <button class="btn btn-lg btn-circle btn-primary" @click="handleAddTake">
-          <div class="i-[mdi--plus] size-6" />
-        </button>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>

@@ -1,8 +1,7 @@
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
+import { injectLoading } from './context';
 
-const loadingCounter = ref(0);
-
-export const useLoadingStore = () => {
+export const useLoading = (loadingCounter = injectLoading()) => {
   const startLoading = () => {
     loadingCounter.value++;
   };

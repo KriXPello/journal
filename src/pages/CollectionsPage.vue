@@ -6,10 +6,10 @@ import PageHeaderActions from '~/components/PageHeaderActions.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { useRepositoryCollection } from '~/repositories';
 import { useDataStore } from '~/stores/data';
-import { useLoadingStore } from '~/stores/loading';
+import { useLoading } from '~/shared/lib/loading';
 import { RouteName } from '~/types/routes';
 
-const { startLoading, endLoading } = useLoadingStore();
+const { startLoading, endLoading } = useLoading();
 
 const { collections, setCollections } = useDataStore();
 const repoCollection = useRepositoryCollection();

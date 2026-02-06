@@ -1,21 +1,25 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import type { Collection, DateObject, Item } from '~/types/entities';
 import type { PayloadCollectionCreate, PayloadCollectionUpdate, RepositoryCollection } from '~/types/repositories/collection';
-import type { RepositoryFoodTake } from '~/types/repositories/food-take';
+import type { RepositoryCalculationDay } from '~/types/repositories/calculation-day';
 import type { RepositoryItem } from '~/types/repositories/item';
 import { getRandomId } from '~/utils/getRandomId';
 import * as v001 from './versions/001';
-import type { FoodTakeKey, StoredFoodTakeGroup } from './versions/002';
 import * as v002 from './versions/002';
+import type { CalculationDayKey, StoredCalculationDay } from './versions/003';
+import * as v003 from './versions/003';
 
 export const createIndexedDbRepositories = async () => {
-  const db = await openDB<v002.Schema>('app-db', 2, {
+  const db = await openDB<v003.Schema>('app-db', 2, {
     upgrade: (database, oldVersion) => {
       if (oldVersion < 1) {
         v001.upgrade(database as IDBPDatabase<unknown>);
       }
       if (oldVersion < 2) {
         v002.upgrade(database as IDBPDatabase<unknown>);
+      }
+      if (oldVersion < 3) {
+        v003.upgrade(database as IDBPDatabase<unknown>);
       }
     },
   });
@@ -112,29 +116,29 @@ export const createIndexedDbRepositories = async () => {
     },
   };
 
-  const createFoodTakeKey = (date: DateObject): FoodTakeKey => {
+  const createCalculationDayKey = (date: DateObject): CalculationDayKey => {
     return `${date.year}-${date.month}-${date.day}`;
   };
-  const foodTake: RepositoryFoodTake = {
-    getGroupByDate: async (date) => {
-      const key = createFoodTakeKey(date);
-      const result = await db.get('food-takes', key);
+  const foodTake: RepositoryCalculationDay = {
+    getByDate: async (date) => {
+      const key = createCalculationDayKey(date);
+      const result = await db.get('calculation-days', key);
       if (result == undefined) {
         return undefined;
       }
       return {
         date: result.date,
-        takes: result.takes,
+        calculations: result.calculations,
       };
     },
-    createOrUpdateGroup: async (payload) => {
-      const key = createFoodTakeKey(payload.date);
-      const record: StoredFoodTakeGroup = {
+    createOrUpdate: async (payload) => {
+      const key = createCalculationDayKey(payload.date);
+      const record: StoredCalculationDay = {
         key: key,
         date: payload.date,
-        takes: payload.takes,
+        calculations: payload.calculations,
       };
-      await db.put('food-takes', record);
+      await db.put('calculation-days', record);
       return record;
     },
   };

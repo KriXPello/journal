@@ -6,7 +6,7 @@ import PageHeaderActions from '~/components/PageHeaderActions.vue';
 import PageHeaderTitle from '~/components/PageHeaderTitle.vue';
 import { useRepositoryItem } from '~/repositories';
 import { useDataStore } from '~/stores/data';
-import { useLoadingStore } from '~/stores/loading';
+import { useLoading } from '~/shared/lib/loading';
 import type { CollectionPageProps } from '~/types/pages';
 import { RouteName } from '~/types/routes';
 
@@ -14,7 +14,7 @@ const { collection } = defineProps<CollectionPageProps>();
 
 const router = useRouter();
 
-const { startLoading, endLoading } = useLoadingStore();
+const { startLoading, endLoading } = useLoading();
 
 const { items: allItems, setItems } = useDataStore();
 const repoItem = useRepositoryItem();
