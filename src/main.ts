@@ -5,6 +5,8 @@ import '@vuepic/vue-datepicker/dist/main.css';
 import '~/app/styles/main.css';
 import '~/app/styles/tailwind.css';
 
+import { piniaColadaConfig } from '~/app/colada';
+
 import App from '~/app/App.vue';
 import router from '~/app/router';
 import {
@@ -14,6 +16,8 @@ import {
   REPOSITORY_KEY_FOOD_TAKE,
   REPOSITORY_KEY_ITEM,
 } from '~/shared/storage';
+import { PiniaColada } from '@pinia/colada';
+
 
 const initApp = async () => {
   const app = createApp(App);
@@ -26,6 +30,7 @@ const initApp = async () => {
   app.provide(REPOSITORY_KEY_FOOD_TAKE, repos.foodTake);
 
   app.use(createPinia());
+  app.use(PiniaColada, piniaColadaConfig);
   app.use(router);
 
   app.mount('#app');
