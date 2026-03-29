@@ -1,0 +1,143 @@
+<script setup lang="ts">
+import { ref, useTemplateRef } from 'vue';
+import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
+import { useRepositoryAppData, useRepositoryCollection, useRepositoryItem } from '~/shared/storage';
+import { buildAppDataBackupFileName, parseAppDataBackup, serializeAppDataBackup } from '~/shared/lib/app-data';
+import { PageHeader, PageHeaderTitle } from '~/shared/ui';
+
+const appDataRepository = useRepositoryAppData();
+const collectionRepository = useRepositoryCollection();
+const itemRepository = useRepositoryItem();
+
+const { startLoading, endLoading } = useLoadingStore();
+const { setCollections, setItems } = useDataStore();
+
+const fileInput = useTemplateRef('fileInput');
+const lastImportMessage = ref('');
+
+const refreshCachedData = async () => {
+  const [collections, items] = await Promise.all([
+    collectionRepository.getAll(),
+    itemRepository.getAll(),
+  ]);
+
+  setCollections(collections);
+  setItems(items);
+};
+
+const handleExport = async () => {
+  startLoading();
+  try {
+    const backup = await appDataRepository.exportBackup();
+    const text = serializeAppDataBackup(backup);
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = buildAppDataBackupFileName();
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('Ошибка экспорта: ' + String(err));
+  } finally {
+    endLoading();
+  }
+};
+
+const openImportDialog = () => {
+  fileInput.value?.click();
+};
+
+const handleImport = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+
+  if (!file) {
+    return;
+  }
+
+  startLoading();
+  try {
+    const text = await file.text();
+    const backup = parseAppDataBackup(text);
+    const summary = await appDataRepository.importBackup(backup);
+    await refreshCachedData();
+    lastImportMessage.value = `Импортировано: коллекций ${summary.collections}, записей ${summary.items}, дней калорий ${summary.foodTakeGroups}.`;
+  } catch (err) {
+    alert('Ошибка импорта: ' + String(err));
+  } finally {
+    endLoading();
+  }
+};
+
+const handleClearAll = async () => {
+  if (!confirm('Очистить все данные приложения?')) {
+    return;
+  }
+
+  startLoading();
+  try {
+    await appDataRepository.clearAll();
+    setCollections([]);
+    setItems([]);
+    lastImportMessage.value = 'Все данные очищены.';
+  } catch (err) {
+    alert('Ошибка очистки: ' + String(err));
+  } finally {
+    endLoading();
+  }
+};
+</script>
+
+<template>
+  <div class="size-full flex flex-col items-center relative">
+    <div class="size-full max-w-xl relative flex flex-col">
+      <PageHeader>
+        <PageHeaderTitle title="Настройки" subtitle="Бэкап и восстановление данных" />
+      </PageHeader>
+
+      <div class="grow min-h-0 overflow-y-auto px-2 py-4 flex flex-col gap-4">
+        <div class="card bg-base-200">
+          <div class="card-body gap-3">
+            <h2 class="card-title">Бэкап</h2>
+            <p>Экспортирует текущие коллекции, записи и данные калорий в versioned JSON файл.</p>
+            <button class="btn btn-primary" @click="handleExport">
+              Экспортировать данные
+            </button>
+          </div>
+        </div>
+
+        <div class="card bg-base-200">
+          <div class="card-body gap-3">
+            <h2 class="card-title">Восстановление</h2>
+            <p>Импорт объединяет данные с текущими: записи с тем же ключом будут обновлены.</p>
+            <button class="btn btn-secondary" @click="openImportDialog">
+              Импортировать данные
+            </button>
+            <input
+              ref="fileInput"
+              class="hidden"
+              type="file"
+              accept="application/json,.json"
+              @change="handleImport"
+            >
+            <p v-if="lastImportMessage" class="text-sm">
+              {{ lastImportMessage }}
+            </p>
+          </div>
+        </div>
+
+        <div class="card bg-base-200 border border-error/30">
+          <div class="card-body gap-3">
+            <h2 class="card-title text-error">Очистка данных</h2>
+            <p>Удаляет все локальные данные приложения. Используй после бэкапа или когда нужна полная замена.</p>
+            <button class="btn btn-error" @click="handleClearAll">
+              Очистить все данные
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
