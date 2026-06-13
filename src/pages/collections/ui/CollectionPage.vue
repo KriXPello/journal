@@ -5,8 +5,9 @@ import { useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
 import InputText from 'primevue/inputtext';
-import Select from 'primevue/select';
+import MultiSelect from 'primevue/multiselect';
 import type { CollectionPageProps } from '~/shared/routes';
+import { searchCollectionItems } from '~/shared/lib/search';
 import {
   collectionByIdQuery,
   collectionItemsQuery,
@@ -41,32 +42,22 @@ const handleAdd = () => {
 };
 
 const searchInput = ref('');
-const searchFieldId = ref('');
+const searchFieldIds = ref<string[]>([]);
 
-const searchFieldOptions = computed(() => [
-  { label: 'Все', value: '' },
-  ...(collection.value?.fields ?? []).map(field => ({
+const searchFieldOptions = computed(() =>
+  (collection.value?.fields ?? []).map(field => ({
     label: field.label,
     value: field.id,
   })),
-]);
+);
 
 const searchedItems = computed(() => {
-  const textInput = searchInput.value.toLocaleUpperCase();
   const list = collectionItems.value ?? [];
-  const fieldId = searchFieldId.value;
-  if (!textInput) {
-    return list;
-  }
-  return list.filter(item => {
-    const valuesToCheck = fieldId == ''
-      ? Object.values(item.data)
-      : [item.data[fieldId]];
+  const allFieldIds = (collection.value?.fields ?? []).map(field => field.id);
 
-    return valuesToCheck
-      .filter(itemValue => itemValue != undefined)
-      .map(itemValue => String(itemValue).toLocaleUpperCase().includes(textInput))
-      .some(Boolean);
+  return searchCollectionItems(list, searchInput.value, {
+    selectedFieldIds: searchFieldIds.value,
+    allFieldIds,
   });
 });
 
@@ -110,23 +101,23 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
 
       <div class="flex gap-1">
         <IftaLabel class="w-40">
-          <Select
-            v-model="searchFieldId"
+          <MultiSelect
+            v-model="searchFieldIds"
             input-id="search-field"
             :options="searchFieldOptions"
             option-label="label"
             option-value="value"
+            placeholder="Все поля"
+            display="chip"
             class="w-full"
-            size="small"
           />
-          <label for="search-field">Поле</label>
+          <label for="search-field">Поля</label>
         </IftaLabel>
         <IftaLabel class="grow">
           <InputText
             id="search-value"
             v-model="searchInput"
             class="w-full"
-            size="small"
             type="text"
           />
           <label for="search-value">Значение</label>
