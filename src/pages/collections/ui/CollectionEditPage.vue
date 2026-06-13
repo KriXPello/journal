@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useMutation, useQuery } from '@pinia/colada';
 import Draggable from 'vuedraggable';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
@@ -8,25 +9,36 @@ import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
 import type { CollectionEditPageProps } from '~/shared/routes';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
 import { COLLECTION_FIELD_KIND_NAMES, COLLECTION_FIELD_KINDS, type CollectionFieldKind } from '~/shared/types';
 import { useAppNotify } from '~/shared/lib/interaction';
-import { useRepositoryCollection } from '~/shared/storage';
+import {
+  collectionByIdQuery,
+  removeCollectionMutation,
+  updateCollectionMutation,
+} from '~/shared/query';
 import { getRandomId } from '~/shared/lib/system';
 import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
-const { collection } = defineProps<CollectionEditPageProps>();
+const { collectionId } = defineProps<CollectionEditPageProps>();
 
 const router = useRouter();
 const { showError, confirmAction } = useAppNotify();
+
+const { data: collection, error: collectionError } = useQuery(
+  () => collectionByIdQuery({ id: collectionId }),
+);
+
+watch(collectionError, (error) => {
+  if (error) {
+    router.replace({ name: RouteName.Collections });
+  }
+});
 
 const fieldKindOptions = computed(() => COLLECTION_FIELD_KINDS.map(kind => ({
   label: COLLECTION_FIELD_KIND_NAMES[kind],
   value: kind,
 })));
-
-const existingKeys = collection.fields.map(x => x.id);
 
 type FormData = {
   label: string;
@@ -39,16 +51,29 @@ type FormData = {
 };
 
 const formData = ref<FormData>({
-  label: collection.label,
-  fields: collection.fields.map(x => {
-    return {
+  label: '',
+  fields: [],
+});
+
+const existingKeys = ref<string[]>([]);
+const isFormInitialized = ref(false);
+
+watch(collection, (value) => {
+  if (!value || isFormInitialized.value) {
+    return;
+  }
+  existingKeys.value = value.fields.map(x => x.id);
+  formData.value = {
+    label: value.label,
+    fields: value.fields.map(x => ({
       key: x.id,
       kind: x.kind,
       label: x.label,
       suggestValue: !!x.suggestValue,
-    };
-  }),
-});
+    })),
+  };
+  isFormInitialized.value = true;
+}, { immediate: true });
 
 const keysToRemove = ref(new Set<string>());
 
@@ -86,32 +111,29 @@ const validate = () => {
   return isValid;
 };
 
-const { startLoading, endLoading } = useLoadingStore();
-const { collections, setCollections } = useDataStore();
-
-const repoCollection = useRepositoryCollection();
+const { mutateAsync: updateCollection, isLoading: isSaving } = useMutation(updateCollectionMutation);
+const { mutateAsync: removeCollection, isLoading: isRemoving } = useMutation(removeCollectionMutation);
 
 const handleSave = async () => {
-  startLoading();
-  try {
-    if (!validate()) {
+  if (!validate()) {
+    return;
+  }
+  const { fields, label } = formData.value;
+
+  if (existingKeys.value.some(key => keysToRemove.value.has(key))) {
+    const isConfirmed = await confirmAction({
+      message: 'Будут удалены некоторые сохраненные поля, продолжить?',
+    });
+    if (!isConfirmed) {
       return;
     }
-    const { fields, label } = formData.value;
+  }
 
-    if (existingKeys.some(key => keysToRemove.value.has(key))) {
-      const isConfirmed = await confirmAction({
-        message: 'Будут удалены некоторые сохраненные поля, продолжить?',
-      });
-      if (!isConfirmed) {
-        return;
-      }
-    }
+  const fieldsToSave = fields.filter(x => !keysToRemove.value.has(x.key));
 
-    const fieldsToSave = fields.filter(x => !keysToRemove.value.has(x.key));
-
-    const updatedCollection = await repoCollection.update({
-      id: collection.id,
+  try {
+    await updateCollection({
+      id: collectionId,
       label,
       fields: fieldsToSave.map(x => ({
         id: x.key,
@@ -121,23 +143,15 @@ const handleSave = async () => {
       })),
     });
 
-    const updatedCollections = collections.value
-      .filter(x => x.id != updatedCollection.id)
-      .concat(updatedCollection);
-
-    setCollections(updatedCollections);
-
-    router.replace({ name: RouteName.Collection, params: { collectionId: collection.id } });
+    router.replace({ name: RouteName.Collection, params: { collectionId } });
   } catch (err) {
     showError(String(err));
-  } finally {
-    endLoading();
   }
 };
 
 const handleDeleteField = (key: string) => {
   errors.value.fields[key] = undefined;
-  if (existingKeys.includes(key)) {
+  if (existingKeys.value.includes(key)) {
     keysToRemove.value.add(key);
   } else {
     formData.value.fields = formData.value.fields.filter(x => x.key != key);
@@ -150,11 +164,11 @@ const handleRestoreField = (key: string) => {
 
 const getBorderClass = (key: string) => {
   if (errors.value.fields[key]) return 'border-danger';
-  if (existingKeys.includes(key)) return 'border-primary';
+  if (existingKeys.value.includes(key)) return 'border-primary';
   return 'border-surface-200';
 };
 
-const handleDeleteCollection = async (collectionId: string) => {
+const handleDeleteCollection = async () => {
   if (!await confirmAction({ message: 'Удалить коллекцию?' })) {
     return;
   }
@@ -168,28 +182,21 @@ const handleDeleteCollection = async (collectionId: string) => {
     return;
   }
 
-  startLoading();
   try {
-    await repoCollection.remove(collectionId);
-
-    const updatedCollections = collections.value.filter(x => x.id != collectionId);
-
-    setCollections(updatedCollections);
-
+    await removeCollection(collectionId);
     router.go(-2);
   } catch (err) {
     showError(String(err));
-  } finally {
-    endLoading();
   }
 };
 
-const collectionLabelId = `collection-edit-label-${collection.id}`;
+const collectionLabelId = `collection-edit-label-${collectionId}`;
+const isLoading = computed(() => isSaving.value || isRemoving.value);
 
 </script>
 
 <template>
-  <div class="size-full flex flex-col items-center relative">
+  <div v-if="collection" class="size-full flex flex-col items-center relative">
     <div class="size-full max-w-xl relative flex flex-col">
       <PageHeader @back="router.back()">
         <PageHeaderTitle title="Редактирование коллекции" :subtitle="collection.label" />
@@ -200,7 +207,8 @@ const collectionLabelId = `collection-edit-label-${collection.id}`;
             severity="secondary"
             title="Удалить коллекцию"
             aria-label="Удалить коллекцию"
-            @click="handleDeleteCollection(collection.id)"
+            :loading="isRemoving"
+            @click="handleDeleteCollection"
           >
             <div class="i-[mdi--trash] text-danger size-6"></div>
           </Button>
@@ -316,7 +324,13 @@ const collectionLabelId = `collection-edit-label-${collection.id}`;
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
+        <Button
+          rounded
+          size="large"
+          aria-label="Сохранить"
+          :loading="isLoading"
+          @click="handleSave"
+        >
           <div class="i-[mdi--content-save-check-outline] size-6" />
         </Button>
       </div>

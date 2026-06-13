@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
@@ -7,47 +7,37 @@ import IftaLabel from 'primevue/iftalabel';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import type { CollectionPageProps } from '~/shared/routes';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
-import { useAppNotify } from '~/shared/lib/interaction';
-import { useRepositoryItem } from '~/shared/storage';
+import {
+  collectionByIdQuery,
+  collectionItemsQuery,
+} from '~/shared/query';
 import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
-import { QUERY_KEYS } from '~/shared/query';
 
-const { collection } = defineProps<CollectionPageProps>();
+const { collectionId } = defineProps<CollectionPageProps>();
 
 const router = useRouter();
-const { showError } = useAppNotify();
 
-const { startLoading, endLoading } = useLoadingStore();
+const { data: collection, error: collectionError, isLoading: isCollectionLoading } = useQuery(
+  () => collectionByIdQuery({ id: collectionId }),
+);
 
-const itemsRepo = useRepositoryItem();
+const { data: collectionItems, refetch: refetchItems, isLoading: isItemsLoading } = useQuery(
+  () => collectionItemsQuery({ collectionId }),
+);
 
-useQuery({
-  key: () => QUERY_KEYS.collectionItems(collection.id),
-  query: () => itemsRepo.getCollectionItems({
-    collectionId: collection.id,
-  }),
+watch(collectionError, (error) => {
+  if (error) {
+    router.replace({ name: RouteName.Collections });
+  }
 });
 
-const { items: allItems, setItems } = useDataStore();
-
-const handleRefresh = async () => {
-  startLoading();
-  try {
-    const list = await itemsRepo.getAll();
-    setItems(list);
-  } catch (err) {
-    showError(String(err));
-  } finally {
-    endLoading();
-  }
+const handleRefresh = () => {
+  refetchItems();
 };
 
-const collectionItems = computed(() => allItems.value.filter(x => x.collectionId == collection.id));
-
 const handleAdd = () => {
-  router.push({ name: RouteName.ItemCreate });
+  router.push({ name: RouteName.ItemCreate, params: { collectionId } });
 };
 
 const searchInput = ref('');
@@ -55,7 +45,7 @@ const searchFieldId = ref('');
 
 const searchFieldOptions = computed(() => [
   { label: 'Все', value: '' },
-  ...collection.fields.map(field => ({
+  ...(collection.value?.fields ?? []).map(field => ({
     label: field.label,
     value: field.id,
   })),
@@ -63,33 +53,33 @@ const searchFieldOptions = computed(() => [
 
 const searchedItems = computed(() => {
   const textInput = searchInput.value.toLocaleUpperCase();
-  const list = collectionItems.value;
+  const list = collectionItems.value ?? [];
   const fieldId = searchFieldId.value;
   if (!textInput) {
     return list;
   }
-  const filteredList = list.filter(item => {
+  return list.filter(item => {
     const valuesToCheck = fieldId == ''
       ? Object.values(item.data)
       : [item.data[fieldId]];
 
-    const isMatches = valuesToCheck
+    return valuesToCheck
       .filter(itemValue => itemValue != undefined)
       .map(itemValue => String(itemValue).toLocaleUpperCase().includes(textInput))
       .some(Boolean);
-    return isMatches;
   });
-  return filteredList;
 });
 
 const handleSettings = () => {
-  router.push({ name: RouteName.CollectionEdit, params: { collectionId: collection.id } });
+  router.push({ name: RouteName.CollectionEdit, params: { collectionId } });
 };
+
+const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.value);
 
 </script>
 
 <template>
-  <div class="size-full flex flex-col items-center relative">
+  <div v-if="collection" class="size-full flex flex-col items-center relative">
     <div class="size-full px-2 max-w-xl relative flex flex-col">
       <PageHeader @back="router.back">
         <PageHeaderTitle title="Коллекция" :subtitle="collection.label" />
@@ -100,6 +90,7 @@ const handleSettings = () => {
             severity="secondary"
             title="Обновить"
             aria-label="Обновить"
+            :loading="isLoading"
             @click="handleRefresh"
           >
             <div class="i-[mdi--refresh] size-6" />
@@ -148,7 +139,7 @@ const handleSettings = () => {
           :key="item.id"
           v-slot="{ href, navigate }"
           custom
-          :to="{ name: RouteName.ItemEdit, params: { itemId: item.id }}"
+          :to="{ name: RouteName.ItemEdit, params: { collectionId, itemId: item.id }}"
         >
           <a
             :href="href"

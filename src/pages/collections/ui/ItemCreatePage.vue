@@ -1,57 +1,65 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useMutation, useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import type { ItemCreatePageProps } from '~/shared/routes';
 import { useItemSuggestions } from '~/pages/collections/model/useItemSuggestions';
 import ItemField from '~/pages/collections/ui/ItemField.vue';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
 import { useAppNotify } from '~/shared/lib/interaction';
-import { useRepositoryItem } from '~/shared/storage';
+import {
+  collectionByIdQuery,
+  collectionItemsQuery,
+  createItemMutation,
+} from '~/shared/query';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
 
-const { collection } = defineProps<ItemCreatePageProps>();
+const { collectionId } = defineProps<ItemCreatePageProps>();
 
 const router = useRouter();
 const { showError } = useAppNotify();
 
-const data = ref<Record<string, unknown>>({});
+const { data: collection, error: collectionError } = useQuery(
+  () => collectionByIdQuery({ id: collectionId }),
+);
 
-const { items: allItems, setItems } = useDataStore();
-const collectionItems = allItems.value.filter(x => x.collectionId == collection.id);
+const { data: collectionItems } = useQuery(
+  () => collectionItemsQuery({ collectionId }),
+);
 
-const { suggestions } = useItemSuggestions({
-  fields: collection.fields,
-  data,
-  items: collectionItems,
+watch(collectionError, () => {
+  router.back();
 });
 
-const { startLoading, endLoading } = useLoadingStore();
+const data = ref<Record<string, unknown>>({});
 
-const repoItem = useRepositoryItem();
+const itemsForSuggestions = computed(() => collectionItems.value ?? []);
+
+const { suggestions } = useItemSuggestions({
+  fields: computed(() => collection.value?.fields ?? []),
+  data,
+  items: itemsForSuggestions,
+});
+
+const { mutateAsync: createItem, isLoading } = useMutation(createItemMutation);
 
 const handleSave = async () => {
-  startLoading();
   try {
-    const newItem = await repoItem.create({
-      collectionId: collection.id,
+    await createItem({
+      collectionId,
       data: data.value,
     });
-
-    setItems(allItems.value.concat(newItem));
 
     router.back();
   } catch (err) {
     showError(String(err));
-  } finally {
-    endLoading();
   }
 };
 
 </script>
 
 <template>
-  <div class="size-full flex flex-col items-center relative">
+  <div v-if="collection" class="size-full flex flex-col items-center relative">
     <div class="size-full max-w-xl relative flex flex-col">
       <PageHeader @back="router.back">
         <PageHeaderTitle
@@ -70,7 +78,13 @@ const handleSave = async () => {
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
+        <Button
+          rounded
+          size="large"
+          aria-label="Сохранить"
+          :loading="isLoading"
+          @click="handleSave"
+        >
           <div class="i-[mdi--content-save-check-outline] size-6" />
         </Button>
       </div>

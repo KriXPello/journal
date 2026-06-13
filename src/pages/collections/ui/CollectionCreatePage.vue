@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useMutation } from '@pinia/colada';
 import Draggable from 'vuedraggable';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
 import { COLLECTION_FIELD_KIND_NAMES, COLLECTION_FIELD_KINDS, type CollectionFieldKind } from '~/shared/types';
 import { useAppNotify } from '~/shared/lib/interaction';
-import { useRepositoryCollection } from '~/shared/storage';
+import { createCollectionMutation } from '~/shared/query';
 import { getRandomId } from '~/shared/lib/system';
 import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
@@ -67,20 +67,16 @@ const validate = () => {
   return isValid;
 };
 
-const { startLoading, endLoading } = useLoadingStore();
-const { collections, setCollections } = useDataStore();
-
-const repoCollection = useRepositoryCollection();
+const { mutateAsync: createCollection, isLoading } = useMutation(createCollectionMutation);
 
 const handleSave = async () => {
-  startLoading();
-  try {
-    if (!validate()) {
-      return;
-    }
-    const { fields, label } = formData.value;
+  if (!validate()) {
+    return;
+  }
+  const { fields, label } = formData.value;
 
-    const newCollection = await repoCollection.create({
+  try {
+    const newCollection = await createCollection({
       label,
       fields: fields.map(x => ({
         kind: x.kind,
@@ -89,13 +85,9 @@ const handleSave = async () => {
       })),
     });
 
-    setCollections(collections.value.concat(newCollection));
-
     router.replace({ name: RouteName.Collection, params: { collectionId: newCollection.id } });
   } catch (err) {
     showError(String(err));
-  } finally {
-    endLoading();
   }
 };
 
@@ -206,7 +198,13 @@ const collectionLabelId = 'collection-create-label';
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
+        <Button
+          rounded
+          size="large"
+          aria-label="Сохранить"
+          :loading="isLoading"
+          @click="handleSave"
+        >
           <div class="i-[mdi--content-save-check-outline] size-6" />
         </Button>
       </div>

@@ -1,18 +1,16 @@
-import type { Collection, Item } from '~/shared/types';
-
 export type CollectionPageProps = {
-  collection: Collection;
+  collectionId: string;
 };
 
 export type CollectionEditPageProps = {
-  collection: Collection;
+  collectionId: string;
 };
 
 export type ItemCreatePageProps = {
-  collection: Collection;
+  collectionId: string;
 };
 
 export type ItemEditPageProps = {
-  collection: Collection;
-  item: Item;
+  collectionId: string;
+  itemId: string;
 };

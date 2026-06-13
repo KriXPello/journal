@@ -1,34 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
+import { useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
-import { useAppNotify } from '~/shared/lib/interaction';
-import { useRepositoryCollection } from '~/shared/storage';
+import { collectionsQuery } from '~/shared/query';
 import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
-const { startLoading, endLoading } = useLoadingStore();
-const { showError } = useAppNotify();
+const router = useRouter();
 
-const { collections, setCollections } = useDataStore();
-const repoCollection = useRepositoryCollection();
-
-const handleRefresh = async () => {
-  startLoading();
-  try {
-    const list = await repoCollection.getAll();
-    setCollections(list);
-  } catch (err) {
-    showError(String(err));
-  } finally {
-    endLoading();
-  }
-};
+const { data: collections, refetch, isLoading } = useQuery(collectionsQuery);
 
 const isEditMode = ref(false);
 
-// TODO: use
 const handleSettings = () => {
   router.push({ name: RouteName.Settings });
 };
@@ -41,14 +25,17 @@ const handleEditSave = () => {
   isEditMode.value = true;
 };
 
-
-const router = useRouter();
-
 const handleCreate = () => {
   router.push({ name: RouteName.CollectionCreate });
 };
 
-const sortedCollections = computed(() => collections.value.slice().sort((a, b) => a.orderNum - b.orderNum));
+const handleRefresh = () => {
+  refetch();
+};
+
+const sortedCollections = computed(() =>
+  (collections.value ?? []).slice().sort((a, b) => a.orderNum - b.orderNum),
+);
 
 </script>
 
@@ -98,6 +85,7 @@ const sortedCollections = computed(() => collections.value.slice().sort((a, b) =
               severity="secondary"
               title="Обновить"
               aria-label="Обновить"
+              :loading="isLoading"
               @click="handleRefresh"
             >
               <div class="i-[mdi--refresh] size-6" />

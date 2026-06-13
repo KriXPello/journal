@@ -14,24 +14,14 @@ import { AppPreset } from '~/app/theme/preset';
 import { PiniaColada } from '@pinia/colada';
 import App from '~/app/App.vue';
 import router from '~/app/router';
-import {
-  createIndexedDbRepositories,
-  REPOSITORY_KEY_APP_DATA,
-  REPOSITORY_KEY_COLLECTION,
-  REPOSITORY_KEY_FOOD_TAKE,
-  ITEM_REPOSITORY_KEY,
-} from '~/shared/storage';
+import { createIndexedDbRepositories } from '~/shared/storage';
+import { setRepositories } from '~/shared/storage/instance';
 
 
 const initApp = async () => {
   const app = createApp(App);
 
-  const repos = await createIndexedDbRepositories();
-
-  app.provide(REPOSITORY_KEY_APP_DATA, repos.appData);
-  app.provide(ITEM_REPOSITORY_KEY, repos.item);
-  app.provide(REPOSITORY_KEY_COLLECTION, repos.collection);
-  app.provide(REPOSITORY_KEY_FOOD_TAKE, repos.foodTake);
+  setRepositories(await createIndexedDbRepositories());
 
   app.use(PrimeVue, {
     theme: {

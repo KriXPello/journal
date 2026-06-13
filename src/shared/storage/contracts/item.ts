@@ -1,4 +1,3 @@
-import type { InjectionKey } from 'vue';
 import type { CollectionField, Item } from '~/shared/types';
 
 export type CreateItemPayload = {
@@ -22,5 +21,3 @@ export type ItemRepository = {
   update: (data: UpdateItemPayload) => Promise<Item>;
   remove: (id: string) => Promise<void>;
 };
-
-export const ITEM_REPOSITORY_KEY = Symbol('repo-item') as InjectionKey<ItemRepository>;

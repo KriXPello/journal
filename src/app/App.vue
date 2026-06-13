@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, type RouteLocationNamedRaw } from 'vue-router';
 import ConfirmDialog from 'primevue/confirmdialog';
-import ProgressSpinner from 'primevue/progressspinner';
 import Toast from 'primevue/toast';
-import { useRepositoryCollection, useRepositoryItem } from '~/shared/storage';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
-import { useAppNotify } from '~/shared/lib/interaction';
 import { RouteName } from '~/shared/routes';
 import { InstallButton } from '~/shared/ui';
 
@@ -29,32 +25,6 @@ const pages: Page[] = [
     icon: 'i-[mdi--cog-outline]',
   },
 ];
-
-const { startLoading, endLoading, isLoading } = useLoadingStore();
-const { setCollections, setItems } = useDataStore();
-const { showError } = useAppNotify();
-
-const repoCollection = useRepositoryCollection();
-const repoItem = useRepositoryItem();
-
-const loadData = async () => {
-  startLoading();
-  try {
-    const [collections, items] = await Promise.all([
-      repoCollection.getAll(),
-      repoItem.getAll(),
-    ]);
-
-    setCollections(collections);
-    setItems(items);
-  } catch (err) {
-    showError(String(err));
-  } finally {
-    endLoading();
-  }
-};
-
-loadData();
 
 </script>
 
@@ -88,25 +58,5 @@ loadData();
       </RouterLink>
       <InstallButton />
     </nav>
-    <div
-      v-show="isLoading"
-      class="absolute scale-z-200 size-full flex items-center justify-center animate"
-    >
-      <ProgressSpinner class="spinner-delayed" />
-    </div>
   </div>
 </template>
-
-<style scoped>
-.spinner-delayed {
-  opacity: 0;
-  animation-name: showLoader;
-  animation-duration: 0ms;
-  animation-delay: 300ms;
-  animation-fill-mode: forwards;
-}
-
-@keyframes showLoader {
-  to { opacity: 1; }
-}
-</style>

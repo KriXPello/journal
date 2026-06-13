@@ -2,6 +2,7 @@
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import { ru } from 'date-fns/locale';
 import { computed, nextTick, ref, toRaw, useTemplateRef, watch } from 'vue';
+import { useMutation, useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputNumber from 'primevue/inputnumber';
@@ -10,53 +11,44 @@ import Tag from 'primevue/tag';
 import CalculatorControls from '~/pages/calories/ui/CalculatorControls.vue';
 import { DateObject, type FoodTake } from '~/shared/types';
 import { vLongPress, useAppNotify } from '~/shared/lib/interaction';
-import { useLoadingStore } from '~/shared/lib/app-state';
-import { useRepositoryFoodTake } from '~/shared/storage';
+import {
+  foodTakeGroupByDateQuery,
+  upsertFoodTakeGroupMutation,
+} from '~/shared/query';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
 
-const repoFoodTake = useRepositoryFoodTake();
 const { confirmAction } = useAppNotify();
 
-const { startLoading, endLoading } = useLoadingStore();
-
 const selectedDate = ref(new Date());
+const dateObject = computed(() => DateObject.fromDate(selectedDate.value));
+
+const { data: serverTakes, isLoading: isQueryLoading } = useQuery(
+  () => foodTakeGroupByDateQuery({ date: dateObject.value }),
+);
+
+const { mutateAsync: upsertGroup, isLoading: isSaving } = useMutation(upsertFoodTakeGroupMutation);
 
 const takes = ref<FoodTake[]>([]);
 
-const loadTakes = async (date: Date) => {
-  const dateObject = DateObject.fromDate(date);
-  startLoading();
-  try {
-    const group = await repoFoodTake.getGroupByDate(dateObject);
-    if (group) {
-      takes.value = group.takes;
-    } else {
-      takes.value = [];
-    }
-  } finally {
-    endLoading();
-  }
-};
-
-watch(selectedDate, (newDate) => loadTakes(newDate), { immediate: true });
-
-const saveTakes = async (date: Date, list: FoodTake[]) => {
-  console.log('save takes');
-  list = toRaw(list);
-  const dateObject = DateObject.fromDate(date);
-  startLoading();
-  try {
-    await repoFoodTake.createOrUpdateGroup({ date: dateObject, takes: list });
-  } finally {
-    endLoading();
-  }
-};
+watch(serverTakes, (value) => {
+  takes.value = value ? value.map(take => ({ ...take })) : [];
+}, { immediate: true });
 
 const debounceTimeoutByDate = new Map<string, ReturnType<typeof setTimeout>>();
+
+const saveTakes = async (date: Date, list: FoodTake[]) => {
+  const payload = toRaw(list);
+  await upsertGroup({
+    date: DateObject.fromDate(date),
+    takes: payload,
+  });
+};
+
 const saveTakesWithDebounce = (date: Date, list: FoodTake[]) => {
   const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-  if (debounceTimeoutByDate.has(key)) {
-    clearTimeout(debounceTimeoutByDate.get(key));
+  const existingTimeout = debounceTimeoutByDate.get(key);
+  if (existingTimeout) {
+    clearTimeout(existingTimeout);
   }
   const timeout = setTimeout(() => {
     saveTakes(date, list);
@@ -179,6 +171,7 @@ const handleCalculatorInput = () => {
   // TODO: calculator input is part of the later calories redesign.
 };
 
+const isLoading = computed(() => isQueryLoading.value || isSaving.value);
 
 </script>
 
@@ -227,6 +220,7 @@ const handleCalculatorInput = () => {
       <div
         ref="takesContainer"
         class="grow pb-16 overflow-y-auto"
+        :class="{ 'opacity-60 pointer-events-none': isLoading }"
       >
         <table class="w-full text-sm border-collapse">
           <thead class="sticky top-0 bg-surface-ground">

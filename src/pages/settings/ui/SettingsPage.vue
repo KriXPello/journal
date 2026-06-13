@@ -1,38 +1,29 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue';
+import { useMutation } from '@pinia/colada';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
 import { useAppNotify } from '~/shared/lib/interaction';
-import { useRepositoryAppData, useRepositoryCollection, useRepositoryItem } from '~/shared/storage';
 import { buildAppDataBackupFileName, parseAppDataBackup, serializeAppDataBackup } from '~/shared/lib/app-data';
+import {
+  clearAllAppDataMutation,
+  exportBackupMutation,
+  importBackupMutation,
+} from '~/shared/query';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
 
-const appDataRepository = useRepositoryAppData();
-const collectionRepository = useRepositoryCollection();
-const itemRepository = useRepositoryItem();
-
-const { startLoading, endLoading } = useLoadingStore();
-const { setCollections, setItems } = useDataStore();
 const { showError, showSuccess, confirmAction } = useAppNotify();
+
+const { mutateAsync: exportBackup, isLoading: isExporting } = useMutation(exportBackupMutation);
+const { mutateAsync: importBackup, isLoading: isImporting } = useMutation(importBackupMutation);
+const { mutateAsync: clearAll, isLoading: isClearing } = useMutation(clearAllAppDataMutation);
 
 const fileInput = useTemplateRef('fileInput');
 const lastImportMessage = ref('');
 
-const refreshCachedData = async () => {
-  const [collections, items] = await Promise.all([
-    collectionRepository.getAll(),
-    itemRepository.getAll(),
-  ]);
-
-  setCollections(collections);
-  setItems(items);
-};
-
 const handleExport = async () => {
-  startLoading();
   try {
-    const backup = await appDataRepository.exportBackup();
+    const backup = await exportBackup();
     const text = serializeAppDataBackup(backup);
     const blob = new Blob([text], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -43,8 +34,6 @@ const handleExport = async () => {
     URL.revokeObjectURL(url);
   } catch (err) {
     showError('Ошибка экспорта: ' + String(err));
-  } finally {
-    endLoading();
   }
 };
 
@@ -61,18 +50,14 @@ const handleImport = async (event: Event) => {
     return;
   }
 
-  startLoading();
   try {
     const text = await file.text();
     const backup = parseAppDataBackup(text);
-    const summary = await appDataRepository.importBackup(backup);
-    await refreshCachedData();
+    const summary = await importBackup(backup);
     lastImportMessage.value = `Импортировано: коллекций ${summary.collections}, записей ${summary.items}, дней калорий ${summary.foodTakeGroups}.`;
     showSuccess(lastImportMessage.value);
   } catch (err) {
     showError('Ошибка импорта: ' + String(err));
-  } finally {
-    endLoading();
   }
 };
 
@@ -86,17 +71,12 @@ const handleClearAll = async () => {
     return;
   }
 
-  startLoading();
   try {
-    await appDataRepository.clearAll();
-    setCollections([]);
-    setItems([]);
+    await clearAll();
     lastImportMessage.value = 'Все данные очищены.';
     showSuccess(lastImportMessage.value);
   } catch (err) {
     showError('Ошибка очистки: ' + String(err));
-  } finally {
-    endLoading();
   }
 };
 </script>
@@ -117,7 +97,7 @@ const handleClearAll = async () => {
             <p class="mb-3">
               Экспортирует текущие коллекции, записи и данные калорий в versioned JSON файл.
             </p>
-            <Button label="Экспортировать данные" @click="handleExport" />
+            <Button label="Экспортировать данные" :loading="isExporting" @click="handleExport" />
           </template>
         </Card>
 
@@ -129,7 +109,12 @@ const handleClearAll = async () => {
             <p class="mb-3">
               Импорт объединяет данные с текущими: записи с тем же ключом будут обновлены.
             </p>
-            <Button label="Импортировать данные" severity="secondary" @click="openImportDialog" />
+            <Button
+              label="Импортировать данные"
+              severity="secondary"
+              :loading="isImporting"
+              @click="openImportDialog"
+            />
             <input
               ref="fileInput"
               class="hidden"
@@ -151,7 +136,12 @@ const handleClearAll = async () => {
             <p class="mb-3">
               Удаляет все локальные данные приложения. Используй после бэкапа или когда нужна полная замена.
             </p>
-            <Button label="Очистить все данные" severity="danger" @click="handleClearAll" />
+            <Button
+              label="Очистить все данные"
+              severity="danger"
+              :loading="isClearing"
+              @click="handleClearAll"
+            />
           </template>
         </Card>
       </div>

@@ -1,82 +1,97 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useMutation, useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import type { ItemEditPageProps } from '~/shared/routes';
 import { useItemSuggestions } from '~/pages/collections/model/useItemSuggestions';
 import ItemField from '~/pages/collections/ui/ItemField.vue';
-import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
 import { useAppNotify } from '~/shared/lib/interaction';
-import { useRepositoryItem } from '~/shared/storage';
+import {
+  collectionByIdQuery,
+  collectionItemsQuery,
+  itemByIdQuery,
+  removeItemMutation,
+  updateItemMutation,
+} from '~/shared/query';
+import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
-const { collection, item } = defineProps<ItemEditPageProps>();
+const { collectionId, itemId } = defineProps<ItemEditPageProps>();
 
 const router = useRouter();
 const { showError, confirmAction } = useAppNotify();
 
-const data = ref<Record<string, unknown>>({ ...item.data });
+const { data: collection, error: collectionError } = useQuery(
+  () => collectionByIdQuery({ id: collectionId }),
+);
 
-const { items: allItems, setItems } = useDataStore();
-const collectionItems = allItems.value.filter(x => x.collectionId == collection.id);
+const { data: item, error: itemError } = useQuery(
+  () => itemByIdQuery({ id: itemId }),
+);
 
-const { suggestions } = useItemSuggestions({
-  fields: collection.fields,
-  data,
-  items: collectionItems,
+const { data: collectionItems } = useQuery(
+  () => collectionItemsQuery({ collectionId }),
+);
+
+watch([collectionError, itemError], ([collectionErr, itemErr]) => {
+  if (collectionErr || itemErr) {
+    router.replace({ name: RouteName.Collection, params: { collectionId } });
+  }
 });
 
-const { startLoading, endLoading } = useLoadingStore();
+const data = ref<Record<string, unknown>>({});
 
-const repoItem = useRepositoryItem();
+watch(item, (value) => {
+  if (value) {
+    data.value = { ...value.data };
+  }
+}, { immediate: true });
+
+const itemsForSuggestions = computed(() => collectionItems.value ?? []);
+
+const { suggestions } = useItemSuggestions({
+  fields: computed(() => collection.value?.fields ?? []),
+  data,
+  items: itemsForSuggestions,
+});
+
+const { mutateAsync: updateItem, isLoading: isSaving } = useMutation(updateItemMutation);
+const { mutateAsync: removeItem, isLoading: isRemoving } = useMutation(removeItemMutation);
 
 const handleSave = async () => {
-  startLoading();
   try {
-    const updatedItem = await repoItem.update({
-      id: item.id,
+    await updateItem({
+      id: itemId,
       data: data.value,
     });
-
-    const updatedItems = allItems.value
-      .filter(x => x.id != updatedItem.id)
-      .concat(updatedItem);
-
-    setItems(updatedItems);
 
     router.back();
   } catch (err) {
     showError(String(err));
-  } finally {
-    endLoading();
   }
 };
 
-const handleDelete = async (id: string) => {
+const handleDelete = async () => {
   const isConfirmed = await confirmAction({ message: 'Удалить элемент?' });
   if (!isConfirmed) {
     return;
   }
-  startLoading();
+
   try {
-    await repoItem.remove(id);
-
-    const updatedItems = allItems.value.filter(x => x.id != id);
-
-    setItems(updatedItems);
-
+    await removeItem({ id: itemId, collectionId });
     router.back();
   } catch (err) {
     showError(String(err));
-  } finally {
-    endLoading();
   }
 };
+
+const isLoading = computed(() => isSaving.value || isRemoving.value);
 
 </script>
 
 <template>
-  <div class="size-full flex flex-col items-center relative">
+  <div v-if="collection && item" class="size-full flex flex-col items-center relative">
     <div class="size-full max-w-xl relative flex flex-col">
       <PageHeader @back="router.back">
         <PageHeaderTitle
@@ -90,7 +105,8 @@ const handleDelete = async (id: string) => {
             severity="secondary"
             title="Удалить элемент"
             aria-label="Удалить элемент"
-            @click="handleDelete(item.id)"
+            :loading="isRemoving"
+            @click="handleDelete"
           >
             <div class="i-[mdi--trash] text-danger size-6" />
           </Button>
@@ -107,7 +123,13 @@ const handleDelete = async (id: string) => {
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
+        <Button
+          rounded
+          size="large"
+          aria-label="Сохранить"
+          :loading="isLoading"
+          @click="handleSave"
+        >
           <div class="i-[mdi--content-save-check-outline] size-6" />
         </Button>
       </div>

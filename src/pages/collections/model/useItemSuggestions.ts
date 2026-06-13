@@ -1,4 +1,4 @@
-import { computed, toValue, type MaybeRefOrGetter, type Ref } from 'vue';
+import { computed, ref, toValue, watch, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue';
 import type { CollectionField, Item, Suggestion } from '~/shared/types';
 
 const search = (inputValue: string, field: CollectionField, items: Item[]): Suggestion[] => {
@@ -36,28 +36,36 @@ const search = (inputValue: string, field: CollectionField, items: Item[]): Sugg
 };
 
 export const useItemSuggestions = (options: {
-  fields: CollectionField[];
+  fields: MaybeRefOrGetter<CollectionField[]>;
   items: MaybeRefOrGetter<Item[]>;
   data: Ref<Record<string, unknown>>;
 }) => {
-  const { fields, items: itemsRaw, data } = options;
+  const { fields: fieldsRaw, items: itemsRaw, data } = options;
 
-  const suggestions = Object.fromEntries(
-    fields.map(field => {
-      const computedList = computed(() => {
-        const inputValue = data.value[field.id];
-        if (inputValue == undefined) {
-          return [];
-        }
-        const searchValue = String(inputValue).trim().toLocaleUpperCase();
-        if (searchValue == '') {
-          return [];
-        }
-        const items = toValue(itemsRaw);
-        return search(searchValue, field, items);
-      });
-      return [field.id, computedList];
-    }),
+  const suggestions = ref<Record<string, ComputedRef<Suggestion[]>>>({});
+
+  watch(
+    () => toValue(fieldsRaw),
+    (fields) => {
+      suggestions.value = Object.fromEntries(
+        fields.map(field => {
+          const computedList = computed(() => {
+            const inputValue = data.value[field.id];
+            if (inputValue == undefined) {
+              return [];
+            }
+            const searchValue = String(inputValue).trim().toLocaleUpperCase();
+            if (searchValue == '') {
+              return [];
+            }
+            const items = toValue(itemsRaw);
+            return search(searchValue, field, items);
+          });
+          return [field.id, computedList];
+        }),
+      );
+    },
+    { immediate: true },
   );
 
   return {
