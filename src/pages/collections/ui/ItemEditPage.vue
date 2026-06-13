@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
 import type { ItemEditPageProps } from '~/shared/routes';
 import { useItemSuggestions } from '~/pages/collections/model/useItemSuggestions';
 import ItemField from '~/pages/collections/ui/ItemField.vue';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { useRepositoryItem } from '~/shared/storage';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
 const { collection, item } = defineProps<ItemEditPageProps>();
 
 const router = useRouter();
+const { showError, confirmAction } = useAppNotify();
 
 const data = ref<Record<string, unknown>>({ ...item.data });
 
@@ -43,15 +46,15 @@ const handleSave = async () => {
 
     router.back();
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
 };
 
 const handleDelete = async (id: string) => {
-  if (!confirm('Удалить элемент?')) {
+  const isConfirmed = await confirmAction({ message: 'Удалить элемент?' });
+  if (!isConfirmed) {
     return;
   }
   startLoading();
@@ -64,8 +67,7 @@ const handleDelete = async (id: string) => {
 
     router.back();
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
@@ -82,9 +84,16 @@ const handleDelete = async (id: string) => {
           :subtitle="'Коллекция: ' + collection.label"
         />
         <PageHeaderActions>
-          <button class="btn-header-action" title="Удалить элемент" @click="handleDelete(item.id)">
-            <div class="i-[mdi--trash] text-error size-6"></div>
-          </button>
+          <Button
+            rounded
+            text
+            severity="secondary"
+            title="Удалить элемент"
+            aria-label="Удалить элемент"
+            @click="handleDelete(item.id)"
+          >
+            <div class="i-[mdi--trash] text-danger size-6" />
+          </Button>
         </PageHeaderActions>
       </PageHeader>
       <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto flex flex-col gap-4">
@@ -98,9 +107,9 @@ const handleDelete = async (id: string) => {
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <button class="btn btn-lg btn-circle btn-primary" @click="handleSave">
+        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
           <div class="i-[mdi--content-save-check-outline] size-6" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

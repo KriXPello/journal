@@ -7,30 +7,34 @@ import type {
   RepositoryAppData,
   RepositoryCollection,
   RepositoryFoodTake,
-  RepositoryItem,
+  ItemRepository,
 } from '~/shared/storage/contracts';
 import * as v001 from './versions/001';
-import type { FoodTakeKey, StoredFoodTakeGroup } from './versions/002';
 import * as v002 from './versions/002';
+import type { FoodTakeKey, StoredFoodTakeGroup } from './versions/003';
+import * as v003 from './versions/003';
 
 const BACKUP_VERSION = 1;
 
 export const createIndexedDbRepositories = async (dbName = 'app-db') => {
-  const db = await openDB<v002.Schema>(dbName, 2, {
-    upgrade: (database, oldVersion) => {
+  const db = await openDB<v003.Schema>(dbName, 3, {
+    upgrade: (database, oldVersion, _newVersion, transaction) => {
       if (oldVersion < 1) {
         v001.upgrade(database as IDBPDatabase<unknown>);
       }
       if (oldVersion < 2) {
         v002.upgrade(database as IDBPDatabase<unknown>);
       }
+      if (oldVersion < 3) {
+        v003.upgrade(database as v003.DbType, transaction as v003.DbUpgradeTransactionType);
+      }
     },
   });
 
-  const item: RepositoryItem = {
-    getAll: async () => {
-      const result = await db.getAll('items');
-      return result;
+  const item: ItemRepository = {
+    getCollectionItems: async (payload) => {
+      const items = await db.getAllFromIndex('items', 'by-collection-id', payload.collectionId);
+      return items;
     },
     getOne: async (id) => {
       const record = await db.get('items', id);

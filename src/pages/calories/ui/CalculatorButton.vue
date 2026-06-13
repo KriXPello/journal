@@ -1,11 +1,9 @@
 <script setup lang="ts">
-defineProps<{
-  onClick: (event: MouseEvent) => void;
-}>();
+import Button from 'primevue/button';
 </script>
 
 <template>
-  <button class="btn btn-circle" @click="onClick">
+  <Button rounded class="aspect-square w-full">
     <slot />
-  </button>
+  </Button>
 </template>

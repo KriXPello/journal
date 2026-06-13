@@ -1,16 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Draggable from 'vuedraggable';
+import Button from 'primevue/button';
+import IftaLabel from 'primevue/iftalabel';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
 import { COLLECTION_FIELD_KIND_NAMES, COLLECTION_FIELD_KINDS, type CollectionFieldKind } from '~/shared/types';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { useRepositoryCollection } from '~/shared/storage';
 import { getRandomId } from '~/shared/lib/system';
 import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
 
 const router = useRouter();
+const { showError } = useAppNotify();
 
+const fieldKindOptions = computed(() => COLLECTION_FIELD_KINDS.map(kind => ({
+  label: COLLECTION_FIELD_KIND_NAMES[kind],
+  value: kind,
+})));
 
 type FormData = {
   label: string;
@@ -82,8 +93,7 @@ const handleSave = async () => {
 
     router.replace({ name: RouteName.Collection, params: { collectionId: newCollection.id } });
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
@@ -92,6 +102,8 @@ const handleSave = async () => {
 const handleDelete = (key: string) => {
   formData.value.fields = formData.value.fields.filter(x => x.key != key);
 };
+
+const collectionLabelId = 'collection-create-label';
 
 </script>
 
@@ -102,22 +114,23 @@ const handleDelete = (key: string) => {
         <PageHeaderTitle title="Создание коллекции" />
       </PageHeader>
       <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto">
-        <label class="floating-label">
-          <span>Название коллекции</span>
-          <input
+        <IftaLabel>
+          <InputText
+            :id="collectionLabelId"
             v-model.trim="formData.label"
-            class="input"
-            :class="{ 'input-error': errors.label }"
+            class="w-full"
+            :invalid="!!errors.label"
             type="text"
             @input="errors.label = ''"
-          >
-          <div
-            v-if="errors.label"
-            class="text-error"
-          >
-            {{ errors.label }}
-          </div>
-        </label>
+          />
+          <label :for="collectionLabelId">Название коллекции</label>
+        </IftaLabel>
+        <div
+          v-if="errors.label"
+          class="text-danger mt-1"
+        >
+          {{ errors.label }}
+        </div>
         <h2 class="mt-4 text-lg font-bold">
           Схема записей
         </h2>
@@ -130,69 +143,72 @@ const handleDelete = (key: string) => {
           >
             <template #item="{ element: field }">
               <div
-                class="p-2 border border-base-200 rounded-box flex gap-4"
-                :class="{ 'border-error': errors.fields[field.key] }"
+                class="p-2 border border-surface-200 rounded-lg flex gap-4"
+                :class="{ 'border-danger': errors.fields[field.key] }"
               >
                 <div class="flex items-center">
-                  <div class="i-[mdi--drag-horizontal] text-secondary size-6 drag-handle"></div>
+                  <div class="i-[mdi--drag-horizontal] text-gray-500 size-6 drag-handle"></div>
                 </div>
                 <div class="grow flex flex-col gap-2">
-                  <label class="floating-label">
-                    <span>Название поля</span>
-                    <input
+                  <IftaLabel>
+                    <InputText
+                      :id="`field-label-${field.key}`"
                       v-model.trim="field.label"
-                      class="input w-full"
+                      class="w-full"
                       type="text"
                       @input="errors.fields[field.key] = ''"
-                    >
-                  </label>
+                    />
+                    <label :for="`field-label-${field.key}`">Название поля</label>
+                  </IftaLabel>
 
-                  <label class="floating-label">
-                    <span>Тип поля</span>
-                    <select
+                  <IftaLabel>
+                    <Select
                       v-model="field.kind"
-                      class="select w-full"
-                    >
-                      <option v-for="kind in COLLECTION_FIELD_KINDS" :key="kind" :value="kind">
-                        {{ COLLECTION_FIELD_KIND_NAMES[kind] }}
-                      </option>
-                    </select>
-                  </label>
+                      :input-id="`field-kind-${field.key}`"
+                      :options="fieldKindOptions"
+                      option-label="label"
+                      option-value="value"
+                      class="w-full"
+                    />
+                    <label :for="`field-kind-${field.key}`">Тип поля</label>
+                  </IftaLabel>
 
-                  <label class="label">
-                    <input v-model="field.suggestValue" type="checkbox" class="toggle" />
+                  <label class="flex items-center gap-2">
+                    <ToggleSwitch v-model="field.suggestValue" />
                     Подсказывать значения
                   </label>
                   <div
                     v-if="errors.fields[field.key]"
-                    class="text-error"
+                    class="text-danger"
                   >
                     {{ errors.fields[field.key] }}
                   </div>
                 </div>
                 <div class="flex items-start">
-                  <button
-                    class="btn btn-error btn-sm btn-square"
+                  <Button
+                    severity="danger"
+                    size="small"
                     title="Удалить"
+                    aria-label="Удалить"
                     @click="handleDelete(field.key)"
                   >
                     <div class="i-[mdi--close] size-6"></div>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </template>
           </Draggable>
 
-          <button class="btn btn-dash" @click="handleAddField">
+          <Button outlined class="w-full" @click="handleAddField">
             <div class="i-[mdi--plus]" />
-          </button>
+          </Button>
         </div>
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <button class="btn btn-lg btn-circle btn-primary" @click="handleSave">
+        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
           <div class="i-[mdi--content-save-check-outline] size-6" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

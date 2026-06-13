@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
 import type { ItemCreatePageProps } from '~/shared/routes';
 import { useItemSuggestions } from '~/pages/collections/model/useItemSuggestions';
 import ItemField from '~/pages/collections/ui/ItemField.vue';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { useRepositoryItem } from '~/shared/storage';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
 
 const { collection } = defineProps<ItemCreatePageProps>();
 
 const router = useRouter();
+const { showError } = useAppNotify();
 
 const data = ref<Record<string, unknown>>({});
 
@@ -39,8 +42,7 @@ const handleSave = async () => {
 
     router.back();
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
@@ -68,9 +70,9 @@ const handleSave = async () => {
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <button class="btn btn-lg btn-circle btn-primary" @click="handleSave">
+        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
           <div class="i-[mdi--content-save-check-outline] size-6" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

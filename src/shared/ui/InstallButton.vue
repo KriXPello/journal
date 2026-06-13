@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import Button from 'primevue/button';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useAppNotify } from '~/shared/lib/interaction';
 
 const deferredPrompt = ref<any>(null);
 const showInstallButton = ref(false);
 const isInstalled = ref(false);
+const { showError } = useAppNotify();
 
 const checkIsInstalled = () => {
   const isTrue = window.matchMedia('(display-mode: standalone)').matches
@@ -22,7 +25,7 @@ const handleBeforeInstallPrompt = (e: any) => {
 
 const installPWA = async () => {
   if (!deferredPrompt.value) {
-    alert('Установка недоступна в вашем браузере');
+    showError('Установка недоступна в вашем браузере');
     return;
   }
 
@@ -65,13 +68,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <button
+  <Button
     v-if="showInstallButton && !isInstalled"
-    class="btn btn-info btn-circle animate-bounce"
+    rounded
+    severity="info"
+    class="animate-bounce"
     :disabled="isInstalled"
     title="Установить (PWA)"
+    aria-label="Установить (PWA)"
     @click="installPWA"
   >
-    <div class="i-[mdi--download-outline] text-info-content size-6"></div>
-  </button>
+    <div class="i-[mdi--download-outline] size-6" />
+  </Button>
 </template>

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue';
+import Button from 'primevue/button';
+import Card from 'primevue/card';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { useRepositoryAppData, useRepositoryCollection, useRepositoryItem } from '~/shared/storage';
 import { buildAppDataBackupFileName, parseAppDataBackup, serializeAppDataBackup } from '~/shared/lib/app-data';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
@@ -11,6 +14,7 @@ const itemRepository = useRepositoryItem();
 
 const { startLoading, endLoading } = useLoadingStore();
 const { setCollections, setItems } = useDataStore();
+const { showError, showSuccess, confirmAction } = useAppNotify();
 
 const fileInput = useTemplateRef('fileInput');
 const lastImportMessage = ref('');
@@ -38,7 +42,7 @@ const handleExport = async () => {
     link.click();
     URL.revokeObjectURL(url);
   } catch (err) {
-    alert('Ошибка экспорта: ' + String(err));
+    showError('Ошибка экспорта: ' + String(err));
   } finally {
     endLoading();
   }
@@ -64,15 +68,21 @@ const handleImport = async (event: Event) => {
     const summary = await appDataRepository.importBackup(backup);
     await refreshCachedData();
     lastImportMessage.value = `Импортировано: коллекций ${summary.collections}, записей ${summary.items}, дней калорий ${summary.foodTakeGroups}.`;
+    showSuccess(lastImportMessage.value);
   } catch (err) {
-    alert('Ошибка импорта: ' + String(err));
+    showError('Ошибка импорта: ' + String(err));
   } finally {
     endLoading();
   }
 };
 
 const handleClearAll = async () => {
-  if (!confirm('Очистить все данные приложения?')) {
+  const isConfirmed = await confirmAction({
+    message: 'Очистить все данные приложения?',
+    acceptLabel: 'Очистить',
+    rejectLabel: 'Отмена',
+  });
+  if (!isConfirmed) {
     return;
   }
 
@@ -82,8 +92,9 @@ const handleClearAll = async () => {
     setCollections([]);
     setItems([]);
     lastImportMessage.value = 'Все данные очищены.';
+    showSuccess(lastImportMessage.value);
   } catch (err) {
-    alert('Ошибка очистки: ' + String(err));
+    showError('Ошибка очистки: ' + String(err));
   } finally {
     endLoading();
   }
@@ -98,23 +109,27 @@ const handleClearAll = async () => {
       </PageHeader>
 
       <div class="grow min-h-0 overflow-y-auto px-2 py-4 flex flex-col gap-4">
-        <div class="card bg-base-200">
-          <div class="card-body gap-3">
-            <h2 class="card-title">Бэкап</h2>
-            <p>Экспортирует текущие коллекции, записи и данные калорий в versioned JSON файл.</p>
-            <button class="btn btn-primary" @click="handleExport">
-              Экспортировать данные
-            </button>
-          </div>
-        </div>
+        <Card class="bg-surface-100">
+          <template #title>
+            Бэкап
+          </template>
+          <template #content>
+            <p class="mb-3">
+              Экспортирует текущие коллекции, записи и данные калорий в versioned JSON файл.
+            </p>
+            <Button label="Экспортировать данные" @click="handleExport" />
+          </template>
+        </Card>
 
-        <div class="card bg-base-200">
-          <div class="card-body gap-3">
-            <h2 class="card-title">Восстановление</h2>
-            <p>Импорт объединяет данные с текущими: записи с тем же ключом будут обновлены.</p>
-            <button class="btn btn-secondary" @click="openImportDialog">
-              Импортировать данные
-            </button>
+        <Card class="bg-surface-100">
+          <template #title>
+            Восстановление
+          </template>
+          <template #content>
+            <p class="mb-3">
+              Импорт объединяет данные с текущими: записи с тем же ключом будут обновлены.
+            </p>
+            <Button label="Импортировать данные" severity="secondary" @click="openImportDialog" />
             <input
               ref="fileInput"
               class="hidden"
@@ -122,21 +137,23 @@ const handleClearAll = async () => {
               accept="application/json,.json"
               @change="handleImport"
             >
-            <p v-if="lastImportMessage" class="text-sm">
+            <p v-if="lastImportMessage" class="text-sm mt-3">
               {{ lastImportMessage }}
             </p>
-          </div>
-        </div>
+          </template>
+        </Card>
 
-        <div class="card bg-base-200 border border-error/30">
-          <div class="card-body gap-3">
-            <h2 class="card-title text-error">Очистка данных</h2>
-            <p>Удаляет все локальные данные приложения. Используй после бэкапа или когда нужна полная замена.</p>
-            <button class="btn btn-error" @click="handleClearAll">
-              Очистить все данные
-            </button>
-          </div>
-        </div>
+        <Card class="bg-surface-100 border border-danger/30">
+          <template #title>
+            <span class="text-danger">Очистка данных</span>
+          </template>
+          <template #content>
+            <p class="mb-3">
+              Удаляет все локальные данные приложения. Используй после бэкапа или когда нужна полная замена.
+            </p>
+            <Button label="Очистить все данные" severity="danger" @click="handleClearAll" />
+          </template>
+        </Card>
       </div>
     </div>
   </div>

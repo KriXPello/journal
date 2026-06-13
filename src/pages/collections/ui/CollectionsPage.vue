@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
+import Button from 'primevue/button';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { useRepositoryCollection } from '~/shared/storage';
 import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
 const { startLoading, endLoading } = useLoadingStore();
+const { showError } = useAppNotify();
 
 const { collections, setCollections } = useDataStore();
 const repoCollection = useRepositoryCollection();
@@ -17,8 +20,7 @@ const handleRefresh = async () => {
     const list = await repoCollection.getAll();
     setCollections(list);
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
@@ -57,44 +59,59 @@ const sortedCollections = computed(() => collections.value.slice().sort((a, b) =
         <PageHeaderTitle title="Коллекции" />
         <PageHeaderActions>
           <template v-if="isEditMode">
-            <button
-              class="btn-header-action"
+            <Button
+              rounded
+              text
+              severity="secondary"
               title="Отменить"
+              aria-label="Отменить"
               @click="handleEditCancel"
             >
               <div class="i-[mdi--close] size-6" />
-            </button>
-            <button
-              class="btn-header-action"
+            </Button>
+            <Button
+              rounded
+              text
+              severity="secondary"
               title="Сохранить"
+              aria-label="Сохранить"
               @click="handleEditSave"
             >
               <div class="i-[mdi--check] size-6" />
-            </button>
+            </Button>
           </template>
 
           <template v-else>
-            <button
-              class="btn-header-action"
+            <Button
+              rounded
+              text
+              severity="secondary"
               title="Создать"
+              aria-label="Создать"
               @click="handleCreate"
             >
               <div class="i-[mdi--plus] size-6" />
-            </button>
-            <button
-              class="btn-header-action"
+            </Button>
+            <Button
+              rounded
+              text
+              severity="secondary"
               title="Обновить"
+              aria-label="Обновить"
               @click="handleRefresh"
             >
               <div class="i-[mdi--refresh] size-6" />
-            </button>
-            <button
-              class="btn-header-action"
+            </Button>
+            <Button
+              rounded
+              text
+              severity="secondary"
               title="Настройки"
+              aria-label="Настройки"
               @click="handleSettings"
             >
               <div class="i-[mdi--cog] size-6" />
-            </button>
+            </Button>
           </template>
         </PageHeaderActions>
       </PageHeader>
@@ -108,7 +125,7 @@ const sortedCollections = computed(() => collections.value.slice().sort((a, b) =
         >
           <a
             :href="href"
-            class="p-4 border border-base-200 rounded-box flex gap-4"
+            class="p-4 border border-surface-200 rounded-lg flex gap-4"
             @click="navigate"
           >
             <span class="text-2xl">{{ coll.label }}</span>

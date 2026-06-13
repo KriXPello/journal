@@ -1,29 +1,44 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
+import { useQuery } from '@pinia/colada';
+import Button from 'primevue/button';
+import IftaLabel from 'primevue/iftalabel';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
 import type { CollectionPageProps } from '~/shared/routes';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { useRepositoryItem } from '~/shared/storage';
 import { RouteName } from '~/shared/routes';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
+import { QUERY_KEYS } from '~/shared/query';
 
 const { collection } = defineProps<CollectionPageProps>();
 
 const router = useRouter();
+const { showError } = useAppNotify();
 
 const { startLoading, endLoading } = useLoadingStore();
 
+const itemsRepo = useRepositoryItem();
+
+useQuery({
+  key: () => QUERY_KEYS.collectionItems(collection.id),
+  query: () => itemsRepo.getCollectionItems({
+    collectionId: collection.id,
+  }),
+});
+
 const { items: allItems, setItems } = useDataStore();
-const repoItem = useRepositoryItem();
 
 const handleRefresh = async () => {
   startLoading();
   try {
-    const list = await repoItem.getAll();
+    const list = await itemsRepo.getAll();
     setItems(list);
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
@@ -37,6 +52,14 @@ const handleAdd = () => {
 
 const searchInput = ref('');
 const searchFieldId = ref('');
+
+const searchFieldOptions = computed(() => [
+  { label: 'Все', value: '' },
+  ...collection.fields.map(field => ({
+    label: field.label,
+    value: field.id,
+  })),
+]);
 
 const searchedItems = computed(() => {
   const textInput = searchInput.value.toLocaleUpperCase();
@@ -71,44 +94,52 @@ const handleSettings = () => {
       <PageHeader @back="router.back">
         <PageHeaderTitle title="Коллекция" :subtitle="collection.label" />
         <PageHeaderActions>
-          <button
-            class="btn-header-action"
+          <Button
+            rounded
+            text
+            severity="secondary"
             title="Обновить"
+            aria-label="Обновить"
             @click="handleRefresh"
           >
             <div class="i-[mdi--refresh] size-6" />
-          </button>
-          <button
-            class="btn-header-action"
+          </Button>
+          <Button
+            rounded
+            text
+            severity="secondary"
             title="Настройки"
+            aria-label="Настройки"
             @click="handleSettings"
           >
             <div class="i-[mdi--cog] size-6" />
-          </button>
+          </Button>
         </PageHeaderActions>
       </PageHeader>
 
       <div class="flex gap-1">
-        <label class="floating-label w-40">
-          <span>Поле</span>
-          <select
+        <IftaLabel class="w-40">
+          <Select
             v-model="searchFieldId"
-            class="select select-sm w-full"
-          >
-            <option value="">Все</option>
-            <option v-for="field in collection.fields" :key="field.id" :value="field.id">
-              {{ field.label }}
-            </option>
-          </select>
-        </label>
-        <label class="floating-label grow">
-          <span>Значение</span>
-          <input
+            input-id="search-field"
+            :options="searchFieldOptions"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+            size="small"
+          />
+          <label for="search-field">Поле</label>
+        </IftaLabel>
+        <IftaLabel class="grow">
+          <InputText
+            id="search-value"
             v-model="searchInput"
-            class="input input-sm w-full"
+            class="w-full"
+            size="small"
             type="text"
           />
-        </label>
+          <label for="search-value">Значение</label>
+        </IftaLabel>
       </div>
 
       <div class="grow min-h-0 mt-4 pb-20 overflow-y-auto flex flex-col gap-2">
@@ -121,7 +152,7 @@ const handleSettings = () => {
         >
           <a
             :href="href"
-            class="p-4 border border-base-200 rounded-box flex flex-col text-sm/5 hover:bg-base-200"
+            class="p-4 border border-surface-200 rounded-lg flex flex-col text-sm/5 hover:bg-surface-100"
             @click="navigate"
           >
             <template v-for="field in collection.fields" :key="field.id">
@@ -139,9 +170,9 @@ const handleSettings = () => {
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <button class="btn btn-lg btn-circle btn-primary" @click="handleAdd">
+        <Button rounded size="large" aria-label="Добавить" @click="handleAdd">
           <div class="i-[mdi--plus] size-6" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

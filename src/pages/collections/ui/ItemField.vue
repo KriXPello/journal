@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { useId } from 'vue';
+import IftaLabel from 'primevue/iftalabel';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
 import type { CollectionField, Suggestion } from '~/shared/types';
 
 defineProps<{
@@ -9,48 +13,53 @@ defineProps<{
 
 const valueBind = defineModel<any>('value', { required: true });
 
-const LIST_ID = useId();
+const inputId = useId();
+const datalistId = useId();
 
 </script>
 
 <template>
-  <label class="floating-label">
-    <span>{{ field.label }}</span>
-    <input
+  <IftaLabel>
+    <InputText
       v-if="field.kind == 'text'"
+      :id="inputId"
       v-model.trim="valueBind"
-      class="input w-full"
+      class="w-full"
       type="text"
-      :list="LIST_ID"
+      :list="datalistId"
     />
-    <textarea
+    <Textarea
       v-else-if="field.kind == 'textarea'"
+      :id="inputId"
       v-model.trim="valueBind"
-      class="textarea w-full"
+      class="w-full"
       rows="5"
-      :list="LIST_ID"
-    ></textarea>
-    <input
+      :list="datalistId"
+    />
+    <InputText
       v-else-if="field.kind == 'date'"
+      :id="inputId"
       v-model="valueBind"
-      class="input w-full"
+      class="w-full"
       type="date"
-      :list="LIST_ID"
+      :list="datalistId"
     />
-    <input
+    <InputNumber
       v-else-if="field.kind == 'number'"
-      v-model.number="valueBind"
-      class="input input-number-no-arrows w-full"
-      type="number"
-      :list="LIST_ID"
+      :id="inputId"
+      v-model="valueBind"
+      class="w-full input-number-no-arrows"
+      :use-grouping="false"
+      input-class="w-full input-number-no-arrows"
     />
+    <label :for="inputId">{{ field.label }}</label>
+  </IftaLabel>
 
-    <datalist v-if="field.suggestValue && suggestions" :id="LIST_ID">
-      <option
-        v-for="suggestion in suggestions"
-        :key="suggestion.key"
-        :value="suggestion.text"
-      ></option>
-    </datalist>
-  </label>
+  <datalist v-if="field.suggestValue && suggestions" :id="datalistId">
+    <option
+      v-for="suggestion in suggestions"
+      :key="suggestion.key"
+      :value="suggestion.text"
+    ></option>
+  </datalist>
 </template>

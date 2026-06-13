@@ -1,22 +1,26 @@
 import type { InjectionKey } from 'vue';
 import type { CollectionField, Item } from '~/shared/types';
 
-export type PayloadItemCreate = {
+export type CreateItemPayload = {
   collectionId: string;
   data: Record<CollectionField['id'], unknown>;
 };
 
-export type PayloadItemUpdate = {
+export type UpdateItemPayload = {
   id: string;
   data: Record<CollectionField['id'], unknown>;
 };
 
-export type RepositoryItem = {
-  getAll: () => Promise<Item[]>;
+export type GetCollectionItemsPayload = {
+  collectionId: string;
+};
+
+export type ItemRepository = {
+  getCollectionItems: (data: GetCollectionItemsPayload) => Promise<Item[]>;
   getOne: (id: string) => Promise<Item | undefined>;
-  create: (data: PayloadItemCreate) => Promise<Item>;
-  update: (data: PayloadItemUpdate) => Promise<Item>;
+  create: (data: CreateItemPayload) => Promise<Item>;
+  update: (data: UpdateItemPayload) => Promise<Item>;
   remove: (id: string) => Promise<void>;
 };
 
-export const REPOSITORY_KEY_ITEM = Symbol('repo-item') as InjectionKey<RepositoryItem>;
+export const ITEM_REPOSITORY_KEY = Symbol('repo-item') as InjectionKey<ItemRepository>;

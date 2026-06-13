@@ -2,14 +2,20 @@
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import { ru } from 'date-fns/locale';
 import { computed, nextTick, ref, toRaw, useTemplateRef, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Tag from 'primevue/tag';
 import CalculatorControls from '~/pages/calories/ui/CalculatorControls.vue';
 import { DateObject, type FoodTake } from '~/shared/types';
-import { vLongPress } from '~/shared/lib/interaction';
+import { vLongPress, useAppNotify } from '~/shared/lib/interaction';
 import { useLoadingStore } from '~/shared/lib/app-state';
 import { useRepositoryFoodTake } from '~/shared/storage';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
 
 const repoFoodTake = useRepositoryFoodTake();
+const { confirmAction } = useAppNotify();
 
 const { startLoading, endLoading } = useLoadingStore();
 
@@ -63,7 +69,6 @@ const sheduleSave = () => {
 };
 
 const takesContainer = useTemplateRef('takesContainer');
-const energyInputs = useTemplateRef('energyInputs');
 
 const calculateTakeTotal = (kkal: number, weightGramm: number) => {
   return kkal * weightGramm / 100;
@@ -78,6 +83,11 @@ const takesTotalEnergy = computed(() => takes.value.reduce(
   (acc, x) => acc + calculateTakeTotal(x.energy || 0, x.weight || 0), 0),
 );
 
+const focusEnergyInput = (takeId: string) => {
+  const input = takesContainer.value?.querySelector(`[data-take-id="${takeId}"] input`);
+  (input as HTMLInputElement | null)?.select();
+};
+
 const handleAddTake = () => {
   const take: FoodTake = {
     id: String(Date.now()) + Math.random(),
@@ -89,8 +99,7 @@ const handleAddTake = () => {
   takes.value.push(take);
   sheduleSave();
   nextTick(() => {
-    const newInput = energyInputs.value?.find(x => x.dataset['takeId'] == take.id);
-    newInput?.select();
+    focusEnergyInput(take.id);
 
     const container = takesContainer.value;
     if (container) {
@@ -129,8 +138,8 @@ const handleClearSelection = () => {
   selectedTakesIds.value.clear();
 };
 
-const handleDeleteSelected = () => {
-  const isConfirmed = confirm('Удалить выбранные записи?');
+const handleDeleteSelected = async () => {
+  const isConfirmed = await confirmAction({ message: 'Удалить выбранные записи?' });
   if (isConfirmed) {
     const selectedSet = selectedTakesIds.value;
     takes.value = takes.value.filter(x => !selectedSet.has(x.id));
@@ -139,12 +148,14 @@ const handleDeleteSelected = () => {
   }
 };
 
-const dateModal = useTemplateRef('dateModal');
+const isDateModalVisible = ref(false);
+
 const showDateModal = () => {
-  dateModal.value?.showModal();
+  isDateModalVisible.value = true;
 };
+
 const closeDateModal = () => {
-  dateModal.value?.close();
+  isDateModalVisible.value = false;
 };
 
 const handleCalendarChange = (date: Date) => {
@@ -179,55 +190,57 @@ const handleCalculatorInput = () => {
       </PageHeader>
       <div class="px-2">
         <div class="flex items-center justify-center gap-6">
-          <button class="btn btn-ghost btn-circle" @click="handlePrevDate">
+          <Button rounded text severity="secondary" aria-label="Предыдущий день" @click="handlePrevDate">
             <div class="i-[mdi--skip-previous] size-6"></div>
-          </button>
+          </Button>
 
-          <a class="link link-accent ml-1" @click="showDateModal()">{{ readableSelectedDate }}</a>
+          <Button
+            link
+            class="ml-1"
+            :label="readableSelectedDate"
+            @click="showDateModal()"
+          />
 
-          <button class="btn btn-ghost btn-circle" @click="handleNextDate">
+          <Button rounded text severity="secondary" aria-label="Следующий день" @click="handleNextDate">
             <div class="i-[mdi--skip-next] size-6"></div>
-          </button>
+          </Button>
         </div>
-        <dialog ref="dateModal" class="modal modal-bottom sm:modal-middle">
-          <div class="modal-box p-2">
-            <div class="flex flex-row items-center justify-between">
-              <h3 class="text-lg font-bold">Выбор даты</h3>
-              <form method="dialog">
-                <button class="btn btn-sm btn-circle btn-ghost" @click="closeDateModal()">✕</button>
-              </form>
-            </div>
-
-            <VueDatePicker
-              :model-value="selectedDate"
-              class="w-full mt-2"
-              inline
-              auto-apply
-              :locale="ru"
-              :time-config="{ enableTimePicker: false }"
-              :ui="{ menu: 'w-full' }"
-              @update:model-value="handleCalendarChange"
-            />
-          </div>
-        </dialog>
+        <Dialog
+          v-model:visible="isDateModalVisible"
+          modal
+          header="Выбор даты"
+          class="w-full max-w-xl"
+          :style="{ width: 'min(100vw - 1rem, 36rem)' }"
+        >
+          <VueDatePicker
+            :model-value="selectedDate"
+            class="w-full mt-2"
+            inline
+            auto-apply
+            :locale="ru"
+            :time-config="{ enableTimePicker: false }"
+            :ui="{ menu: 'w-full' }"
+            @update:model-value="handleCalendarChange"
+          />
+        </Dialog>
       </div>
       <div
         ref="takesContainer"
         class="grow pb-16 overflow-y-auto"
       >
-        <table class="table table-pin-rows table-sm">
-          <thead>
+        <table class="w-full text-sm border-collapse">
+          <thead class="sticky top-0 bg-surface-ground">
             <tr>
-              <th class="w-20">
+              <th class="w-20 text-left font-medium p-1">
                 ккал/<br>100г.
               </th>
-              <th class="w-20">
+              <th class="w-20 text-left font-medium p-1">
                 вес,<br>грамм
               </th>
-              <th>
+              <th class="text-left font-medium p-1">
                 всего,<br>ккал
               </th>
-              <th>
+              <th class="text-left font-medium p-1">
                 продукт
               </th>
             </tr>
@@ -240,36 +253,39 @@ const handleCalculatorInput = () => {
                 onClick: () => handleClickRow(take.id),
                 onLongPress: () => handleLongPressRow(take.id),
               }"
-              :class="{ 'bg-accent/20': selectedTakesIds.has(take.id) }"
+              :class="{ 'bg-primary/20': selectedTakesIds.has(take.id) }"
             >
-              <td>
-                <input
-                  ref="energyInputs"
-                  v-model.number="take.energy"
-                  type="number"
-                  class="input input-xs input-number-no-arrows select-auto"
-                  min="0"
+              <td class="p-0.5">
+                <InputNumber
+                  v-model="take.energy"
                   :data-take-id="take.id"
+                  class="w-full input-number-no-arrows"
+                  input-class="w-full input-number-no-arrows text-xs p-1"
+                  :min="0"
+                  :use-grouping="false"
+                  size="small"
                   @input="sheduleSave"
-                >
+                />
               </td>
-              <td>
-                <input
-                  v-model.number="take.weight"
-                  type="number"
-                  class="input input-xs input-number-no-arrows select-auto"
-                  min="0"
+              <td class="p-0.5">
+                <InputNumber
+                  v-model="take.weight"
+                  class="w-full input-number-no-arrows"
+                  input-class="w-full input-number-no-arrows text-xs p-1"
+                  :min="0"
+                  :use-grouping="false"
+                  size="small"
                   @input="sheduleSave"
-                >
+                />
               </td>
-              <td>{{ formatTakeTotal(calculateTakeTotal(take.energy, take.weight)) }}</td>
-              <td>
-                <input
+              <td class="p-1">{{ formatTakeTotal(calculateTakeTotal(take.energy, take.weight)) }}</td>
+              <td class="p-0.5">
+                <InputText
                   v-model="take.label"
-                  type="text"
-                  class="input input-xs select-auto"
+                  class="w-full"
+                  size="small"
                   @input="sheduleSave"
-                >
+                />
               </td>
             </tr>
           </tbody>
@@ -282,15 +298,16 @@ const handleCalculatorInput = () => {
 
       <div
         v-if="selectedTakesIds.size"
-        class="absolute z-2 w-full px-2 py-1 flex gap-4 items-center bg-base-200 rounded-b-box shadow-lg"
+        class="absolute z-2 w-full px-2 py-1 flex gap-4 items-center bg-surface-100 rounded-b-lg shadow-lg"
       >
-        <button
-          class="btn btn-circle"
+        <Button
+          rounded
           title="Снять выделение"
+          aria-label="Снять выделение"
           @click="handleClearSelection"
         >
           <div class="i-[mdi--close] size-6" />
-        </button>
+        </Button>
 
         <div class="text-lg" title="Выбрано">
           {{ selectedTakesIds.size }}
@@ -298,22 +315,23 @@ const handleCalculatorInput = () => {
 
         <div class="grow" />
 
-        <button
-          class="btn btn-circle btn-ghost hover:btn-error"
+        <Button
+          rounded
+          text
+          severity="danger"
           title="Удалить выбранные"
+          aria-label="Удалить выбранные"
           @click="handleDeleteSelected"
         >
           <div class="i-[mdi--trash] size-6" />
-        </button>
+        </Button>
       </div>
 
       <div class="absolute z-2 bottom-0 left-0 w-full p-4 flex justify-between items-center">
-        <div class="badge badge-lg badge-info">
-          {{ formatTakeTotal(takesTotalEnergy) }}
-        </div>
-        <button class="btn btn-lg btn-circle btn-primary" @click="handleAddTake">
+        <Tag severity="info" :value="String(formatTakeTotal(takesTotalEnergy))" class="text-lg" />
+        <Button rounded size="large" aria-label="Добавить запись" @click="handleAddTake">
           <div class="i-[mdi--plus] size-6" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

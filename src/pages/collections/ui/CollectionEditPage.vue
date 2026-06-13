@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Draggable from 'vuedraggable';
+import Button from 'primevue/button';
+import IftaLabel from 'primevue/iftalabel';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 import type { CollectionEditPageProps } from '~/shared/routes';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
 import { COLLECTION_FIELD_KIND_NAMES, COLLECTION_FIELD_KINDS, type CollectionFieldKind } from '~/shared/types';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { useRepositoryCollection } from '~/shared/storage';
 import { getRandomId } from '~/shared/lib/system';
 import { RouteName } from '~/shared/routes';
@@ -13,6 +19,12 @@ import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 const { collection } = defineProps<CollectionEditPageProps>();
 
 const router = useRouter();
+const { showError, confirmAction } = useAppNotify();
+
+const fieldKindOptions = computed(() => COLLECTION_FIELD_KINDS.map(kind => ({
+  label: COLLECTION_FIELD_KIND_NAMES[kind],
+  value: kind,
+})));
 
 const existingKeys = collection.fields.map(x => x.id);
 
@@ -88,7 +100,10 @@ const handleSave = async () => {
     const { fields, label } = formData.value;
 
     if (existingKeys.some(key => keysToRemove.value.has(key))) {
-      if (!confirm('Будут удалены некоторые сохраненные поля, продолжить?')) {
+      const isConfirmed = await confirmAction({
+        message: 'Будут удалены некоторые сохраненные поля, продолжить?',
+      });
+      if (!isConfirmed) {
         return;
       }
     }
@@ -114,8 +129,7 @@ const handleSave = async () => {
 
     router.replace({ name: RouteName.Collection, params: { collectionId: collection.id } });
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
@@ -135,22 +149,22 @@ const handleRestoreField = (key: string) => {
 };
 
 const getBorderClass = (key: string) => {
-  if (errors.value.fields[key]) return 'border-error';
+  if (errors.value.fields[key]) return 'border-danger';
   if (existingKeys.includes(key)) return 'border-primary';
-  return 'border-base-200';
+  return 'border-surface-200';
 };
 
 const handleDeleteCollection = async (collectionId: string) => {
-  if (!confirm('Удалить коллекцию?')) {
+  if (!await confirmAction({ message: 'Удалить коллекцию?' })) {
     return;
   }
-  if (!confirm('Точно удалить? Вдруг там много важных записей?')) {
+  if (!await confirmAction({ message: 'Точно удалить? Вдруг там много важных записей?' })) {
     return;
   }
-  if (confirm('Может отменить удаление?')) {
+  if (await confirmAction({ message: 'Может отменить удаление?' })) {
     return;
   }
-  if (!confirm('Ладно, последний раз, точно удалить?')) {
+  if (!await confirmAction({ message: 'Ладно, последний раз, точно удалить?' })) {
     return;
   }
 
@@ -164,12 +178,13 @@ const handleDeleteCollection = async (collectionId: string) => {
 
     router.go(-2);
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
 };
+
+const collectionLabelId = `collection-edit-label-${collection.id}`;
 
 </script>
 
@@ -179,32 +194,36 @@ const handleDeleteCollection = async (collectionId: string) => {
       <PageHeader @back="router.back()">
         <PageHeaderTitle title="Редактирование коллекции" :subtitle="collection.label" />
         <PageHeaderActions>
-          <button
-            class="btn-header-action"
+          <Button
+            rounded
+            text
+            severity="secondary"
             title="Удалить коллекцию"
+            aria-label="Удалить коллекцию"
             @click="handleDeleteCollection(collection.id)"
           >
-            <div class="i-[mdi--trash] text-error size-6"></div>
-          </button>
+            <div class="i-[mdi--trash] text-danger size-6"></div>
+          </Button>
         </PageHeaderActions>
       </PageHeader>
       <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto">
-        <label class="floating-label">
-          <span>Название коллекции</span>
-          <input
+        <IftaLabel>
+          <InputText
+            :id="collectionLabelId"
             v-model.trim="formData.label"
-            class="input"
-            :class="{ 'input-error': errors.label }"
+            class="w-full"
+            :invalid="!!errors.label"
             type="text"
             @input="errors.label = ''"
-          >
-          <div
-            v-if="errors.label"
-            class="text-error"
-          >
-            {{ errors.label }}
-          </div>
-        </label>
+          />
+          <label :for="collectionLabelId">Название коллекции</label>
+        </IftaLabel>
+        <div
+          v-if="errors.label"
+          class="text-danger mt-1"
+        >
+          {{ errors.label }}
+        </div>
         <h2 class="mt-4 text-lg font-bold">
           Схема записей
         </h2>
@@ -217,7 +236,7 @@ const handleDeleteCollection = async (collectionId: string) => {
           >
             <template #item="{ element: field }">
               <div
-                class="p-2 border rounded-box flex gap-4"
+                class="p-2 border rounded-lg flex gap-4"
                 :class="[
                   getBorderClass(field.key),
                   {
@@ -226,75 +245,80 @@ const handleDeleteCollection = async (collectionId: string) => {
                 ]"
               >
                 <div class="flex items-center">
-                  <div class="i-[mdi--drag-horizontal] text-secondary size-6 drag-handle"></div>
+                  <div class="i-[mdi--drag-horizontal] text-gray-500 size-6 drag-handle"></div>
                 </div>
                 <div class="grow flex flex-col gap-2">
-                  <label class="floating-label">
-                    <span>Название поля</span>
-                    <input
+                  <IftaLabel>
+                    <InputText
+                      :id="`field-label-${field.key}`"
                       v-model.trim="field.label"
-                      class="input w-full"
+                      class="w-full"
                       type="text"
                       @input="errors.fields[field.key] = ''"
-                    >
-                  </label>
+                    />
+                    <label :for="`field-label-${field.key}`">Название поля</label>
+                  </IftaLabel>
 
-                  <label class="floating-label">
-                    <span>Тип поля</span>
-                    <select
+                  <IftaLabel>
+                    <Select
                       v-model="field.kind"
-                      class="select w-full"
+                      :input-id="`field-kind-${field.key}`"
+                      :options="fieldKindOptions"
+                      option-label="label"
+                      option-value="value"
+                      class="w-full"
                       :disabled="existingKeys.includes(field.key)"
-                    >
-                      <option v-for="kind in COLLECTION_FIELD_KINDS" :key="kind" :value="kind">
-                        {{ COLLECTION_FIELD_KIND_NAMES[kind] }}
-                      </option>
-                    </select>
-                  </label>
+                    />
+                    <label :for="`field-kind-${field.key}`">Тип поля</label>
+                  </IftaLabel>
 
-                  <label class="label">
-                    <input v-model="field.suggestValue" type="checkbox" class="toggle" />
+                  <label class="flex items-center gap-2">
+                    <ToggleSwitch v-model="field.suggestValue" />
                     Подсказывать значения
                   </label>
                   <div
                     v-if="errors.fields[field.key]"
-                    class="text-error"
+                    class="text-danger"
                   >
                     {{ errors.fields[field.key] }}
                   </div>
                 </div>
                 <div class="flex items-start">
-                  <button
+                  <Button
                     v-if="keysToRemove.has(field.key)"
-                    class="btn btn-info btn-sm btn-square"
+                    severity="info"
+                    size="small"
                     title="Вернуть"
+                    aria-label="Вернуть"
                     @click="handleRestoreField(field.key)"
                   >
                     <div class="i-[mdi--restore] size-6"></div>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     v-else
-                    class="btn btn-error btn-sm btn-square"
+                    severity="danger"
+                    size="small"
                     title="Удалить"
+                    aria-label="Удалить"
                     @click="handleDeleteField(field.key)"
                   >
                     <div class="i-[mdi--close] size-6"></div>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </template>
           </Draggable>
 
-          <button class="btn btn-dash" @click="handleAddField">
+          <Button outlined class="w-full" @click="handleAddField">
             <div class="i-[mdi--plus]" />
-          </button>
+          </Button>
         </div>
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">
-        <button class="btn btn-lg btn-circle btn-primary" @click="handleSave">
+        <Button rounded size="large" aria-label="Сохранить" @click="handleSave">
           <div class="i-[mdi--content-save-check-outline] size-6" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

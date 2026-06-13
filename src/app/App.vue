@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, type RouteLocationNamedRaw } from 'vue-router';
+import ConfirmDialog from 'primevue/confirmdialog';
+import ProgressSpinner from 'primevue/progressspinner';
+import Toast from 'primevue/toast';
 import { useRepositoryCollection, useRepositoryItem } from '~/shared/storage';
 import { useDataStore, useLoadingStore } from '~/shared/lib/app-state';
+import { useAppNotify } from '~/shared/lib/interaction';
 import { RouteName } from '~/shared/routes';
 import { InstallButton } from '~/shared/ui';
 
@@ -28,6 +32,7 @@ const pages: Page[] = [
 
 const { startLoading, endLoading, isLoading } = useLoadingStore();
 const { setCollections, setItems } = useDataStore();
+const { showError } = useAppNotify();
 
 const repoCollection = useRepositoryCollection();
 const repoItem = useRepositoryItem();
@@ -43,8 +48,7 @@ const loadData = async () => {
     setCollections(collections);
     setItems(items);
   } catch (err) {
-    // TODO: refactor
-    alert('Error: ' + String(err));
+    showError(String(err));
   } finally {
     endLoading();
   }
@@ -55,11 +59,13 @@ loadData();
 </script>
 
 <template>
+  <Toast position="top-center" />
+  <ConfirmDialog />
   <div class="size-full max-h-full overflow-hidden flex flex-col">
     <div class="grow min-h-0 w-full">
       <RouterView />
     </div>
-    <nav class="flex items-center justify-center gap-8 border-t border-t-base-200">
+    <nav class="flex items-center justify-center gap-8 border-t border-t-surface-200">
       <RouterLink
         v-for="page, index in pages"
         :key="index"
@@ -69,7 +75,7 @@ loadData();
       >
         <a
           class="block relative p-2 transition"
-          :class="{ 'text-accent': isActive }"
+          :class="{ 'text-primary': isActive }"
           :href="href"
           @click="navigate"
         >
@@ -77,7 +83,7 @@ loadData();
             class="size-10"
             :class="page.icon"
           />
-          <div v-if="isActive" class="absolute bottom-2 inset-x-2 h-1 rounded-full bg-accent" />
+          <div v-if="isActive" class="absolute bottom-2 inset-x-2 h-1 rounded-full bg-primary" />
         </a>
       </RouterLink>
       <InstallButton />
@@ -86,13 +92,13 @@ loadData();
       v-show="isLoading"
       class="absolute scale-z-200 size-full flex items-center justify-center animate"
     >
-      <span class="loading loading-bars loading-xl loading-delayed"></span>
+      <ProgressSpinner class="spinner-delayed" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.loading-delayed {
+.spinner-delayed {
   opacity: 0;
   animation-name: showLoader;
   animation-duration: 0ms;

@@ -1,18 +1,16 @@
 @import "tailwindcss";
-@plugin "daisyui" {
-  themes: corporate --default, business --prefersdark;
-};
-@plugin "daisyui/theme" {
-  name: "corporate";
-  default: true;
-  --color-error: var(--color-red-600);
-  --color-error-content: var(--color-white);
-}
 
 @plugin "@iconify/tailwind4" {
   prefix: "i";
 };
 
+@theme {
+  --color-primary: var(--p-primary-color);
+  --color-surface-100: var(--p-surface-100);
+  --color-surface-200: var(--p-surface-200);
+  --color-surface-ground: var(--p-surface-ground);
+  --color-danger: var(--p-red-500);
+}
 
 @utility input-number-no-arrows {
   &::-webkit-outer-spin-button,
@@ -22,12 +20,4 @@
   }
 
   -moz-appearance: textfield;
-}
-
-@utility input {
-  @apply px-1;
-}
-
-@utility btn-header-action {
-  @apply btn btn-circle btn-ghost btn-md;
 }
