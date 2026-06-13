@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@plugin "@iconify/tailwind4" {
+  prefix: "i";
+};
+
+@theme {
+  --color-primary: var(--p-primary-color);
+  --color-surface-100: var(--p-surface-100);
+  --color-surface-200: var(--p-surface-200);
+  --color-surface-ground: var(--p-surface-ground);
+  --color-danger: var(--p-red-500);
+}
+
+@utility input-number-no-arrows {
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  -moz-appearance: textfield;
+}
