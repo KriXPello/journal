@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
 import InputText from 'primevue/inputtext';
 import MultiSelect from 'primevue/multiselect';
+import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
+import type { DynamicScrollerExposed } from 'vue-virtual-scroller';
+import CollectionItemLink from '~/pages/collections/ui/CollectionItemLink.vue';
 import type { CollectionPageProps } from '~/shared/routes';
 import { searchCollectionItems } from '~/shared/lib/search';
 import {
@@ -13,11 +16,16 @@ import {
   collectionItemsQuery,
 } from '~/shared/query';
 import { RouteName } from '~/shared/routes';
+import type { Item } from '~/shared/types';
 import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
+
+const VIRTUALIZATION_THRESHOLD = 50;
+const MIN_ITEM_SIZE = 72;
 
 const { collectionId } = defineProps<CollectionPageProps>();
 
 const router = useRouter();
+const scrollerRef = useTemplateRef<DynamicScrollerExposed<Item>>('scroller');
 
 const { data: collection, error: collectionError, isLoading: isCollectionLoading } = useQuery(
   () => collectionByIdQuery({ id: collectionId }),
@@ -33,6 +41,9 @@ watch(collectionError, (error) => {
   }
 });
 
+const searchInput = ref('');
+const searchFieldIds = ref<string[]>([]);
+
 const handleRefresh = () => {
   refetchItems();
 };
@@ -40,9 +51,6 @@ const handleRefresh = () => {
 const handleAdd = () => {
   router.push({ name: RouteName.ItemCreate, params: { collectionId } });
 };
-
-const searchInput = ref('');
-const searchFieldIds = ref<string[]>([]);
 
 const searchFieldOptions = computed(() =>
   (collection.value?.fields ?? []).map(field => ({
@@ -60,6 +68,22 @@ const searchedItems = computed(() => {
     allFieldIds,
   });
 });
+
+const searchedItemsSignature = computed(() =>
+  searchedItems.value.map(item => item.id).join('\n'),
+);
+
+watch([searchInput, searchFieldIds], () => {
+  nextTick(() => {
+    scrollerRef.value?.scrollToPosition(0);
+  });
+}, { flush: 'post' });
+
+watch(searchedItemsSignature, () => {
+  nextTick(() => {
+    scrollerRef.value?.forceUpdate(false);
+  });
+}, { flush: 'post' });
 
 const handleSettings = () => {
   router.push({ name: RouteName.CollectionEdit, params: { collectionId } });
@@ -124,31 +148,33 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
         </IftaLabel>
       </div>
 
-      <div class="grow min-h-0 mt-4 pb-20 overflow-y-auto flex flex-col gap-2">
-        <RouterLink
-          v-for="item of searchedItems"
-          :key="item.id"
-          v-slot="{ href, navigate }"
-          custom
-          :to="{ name: RouteName.ItemEdit, params: { collectionId, itemId: item.id }}"
+      <div class="grow min-h-0 mt-4">
+        <DynamicScroller
+          v-if="searchedItems.length > 0"
+          ref="scroller"
+          :items="searchedItems"
+          key-field="id"
+          :min-item-size="MIN_ITEM_SIZE"
+          :enabled="searchedItems.length >= VIRTUALIZATION_THRESHOLD"
+          flow-mode
+          class="size-full pb-20"
         >
-          <a
-            :href="href"
-            class="p-4 border border-surface-200 rounded-lg flex flex-col text-sm/5 hover:bg-surface-100"
-            @click="navigate"
-          >
-            <template v-for="field in collection.fields" :key="field.id">
-              <div
-                v-if="item.data[field.id]"
-                class="flex gap-1"
-              >
-                <span class="font-bold">{{ field.label }}:</span>
-                <span class="line-clamp-2">{{ item.data[field.id] }}</span>
-                <br>
-              </div>
-            </template>
-          </a>
-        </RouterLink>
+          <template #default="{ item, index, active }">
+            <DynamicScrollerItem
+              :item="item"
+              :active="active"
+              :index="index"
+            >
+              <CollectionItemLink
+                v-if="active"
+                :key="item.id"
+                :collection-id="collectionId"
+                :item="item"
+                :fields="collection.fields"
+              />
+            </DynamicScrollerItem>
+          </template>
+        </DynamicScroller>
       </div>
 
       <div class="absolute z-2 bottom-0 right-0 p-4">

@@ -5,6 +5,7 @@ import ToastService from 'primevue/toastservice';
 import { createApp } from 'vue';
 
 import '@vuepic/vue-datepicker/dist/main.css';
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 import '~/app/styles/main.css';
 import '~/app/styles/tailwind.css';
 
