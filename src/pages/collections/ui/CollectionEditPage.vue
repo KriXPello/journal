@@ -18,7 +18,7 @@ import {
 } from '~/shared/query';
 import { getRandomId } from '~/shared/lib/system';
 import { RouteName } from '~/shared/routes';
-import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
+import { PageHeader, PageHeaderAction, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
 const { collectionId } = defineProps<CollectionEditPageProps>();
 
@@ -201,7 +201,7 @@ const isLoading = computed(() => isSaving.value || isRemoving.value);
       <PageHeader @back="router.back()">
         <PageHeaderTitle title="Редактирование коллекции" :subtitle="collection.label" />
         <PageHeaderActions>
-          <Button
+          <PageHeaderAction
             rounded
             text
             severity="secondary"
@@ -211,7 +211,7 @@ const isLoading = computed(() => isSaving.value || isRemoving.value);
             @click="handleDeleteCollection"
           >
             <div class="i-[mdi--trash] text-danger size-6"></div>
-          </Button>
+          </PageHeaderAction>
         </PageHeaderActions>
       </PageHeader>
       <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto">

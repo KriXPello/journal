@@ -1,5 +1,6 @@
-import { computed, ref, toValue, watch, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue';
-import { searchFieldSuggestions } from '~/shared/lib/search';
+import { refDebounced } from '@vueuse/core';
+import { computed, toValue, type MaybeRefOrGetter, type Ref } from 'vue';
+import { SEARCH_DEBOUNCE_MS, searchFieldSuggestions } from '~/shared/lib/search';
 import type { CollectionField, Item, Suggestion } from '~/shared/types';
 
 export const useItemSuggestions = (options: {
@@ -9,29 +10,37 @@ export const useItemSuggestions = (options: {
 }) => {
   const { fields: fieldsRaw, items: itemsRaw, data } = options;
 
-  const suggestions = ref<Record<string, ComputedRef<Suggestion[]>>>({});
+  const debouncedQueries = computed(() => {
+    const fields = toValue(fieldsRaw).filter(field => field.suggestValue);
+    const queries: Record<string, string> = {};
 
-  watch(
-    () => toValue(fieldsRaw),
-    (fields) => {
-      suggestions.value = Object.fromEntries(
-        fields.map(field => {
-          const computedList = computed(() => {
-            const inputValue = data.value[field.id];
-            if (inputValue == undefined) {
-              return [];
-            }
-            const items = toValue(itemsRaw);
-            return searchFieldSuggestions(items, field.id, String(inputValue));
-          });
-          return [field.id, computedList];
-        }),
-      );
-    },
-    { immediate: true },
-  );
+    for (const field of fields) {
+      const inputValue = data.value[field.id];
+      queries[field.id] = inputValue == undefined ? '' : String(inputValue);
+    }
+
+    return queries;
+  });
+
+  const debouncedQueriesByField = refDebounced(debouncedQueries, SEARCH_DEBOUNCE_MS);
+
+  const suggestionLists = computed(() => {
+    const items = toValue(itemsRaw);
+    const queries = debouncedQueriesByField.value;
+    const lists: Record<string, Suggestion[]> = {};
+
+    for (const field of toValue(fieldsRaw)) {
+      if (!field.suggestValue) {
+        continue;
+      }
+
+      lists[field.id] = searchFieldSuggestions(items, field.id, queries[field.id] ?? '');
+    }
+
+    return lists;
+  });
 
   return {
-    suggestions,
+    suggestionLists,
   };
 };

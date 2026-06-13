@@ -15,7 +15,7 @@ import {
   updateItemMutation,
 } from '~/shared/query';
 import { RouteName } from '~/shared/routes';
-import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
+import { PageHeader, PageHeaderAction, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
 const { collectionId, itemId } = defineProps<ItemEditPageProps>();
 
@@ -50,7 +50,7 @@ watch(item, (value) => {
 
 const itemsForSuggestions = computed(() => collectionItems.value ?? []);
 
-const { suggestions } = useItemSuggestions({
+const { suggestionLists } = useItemSuggestions({
   fields: computed(() => collection.value?.fields ?? []),
   data,
   items: itemsForSuggestions,
@@ -99,7 +99,7 @@ const isLoading = computed(() => isSaving.value || isRemoving.value);
           :subtitle="'Коллекция: ' + collection.label"
         />
         <PageHeaderActions>
-          <Button
+          <PageHeaderAction
             rounded
             text
             severity="secondary"
@@ -109,16 +109,17 @@ const isLoading = computed(() => isSaving.value || isRemoving.value);
             @click="handleDelete"
           >
             <div class="i-[mdi--trash] text-danger size-6" />
-          </Button>
+          </PageHeaderAction>
         </PageHeaderActions>
       </PageHeader>
       <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto flex flex-col gap-4">
         <ItemField
           v-for="field in collection.fields"
           :key="field.id"
-          v-model:value="data[field.id]"
+          :value="data[field.id]"
           :field="field"
-          :suggestions="suggestions[field.id]?.value"
+          :suggestions="suggestionLists[field.id]"
+          @update:value="(value: unknown) => data[field.id] = value"
         />
       </div>
 

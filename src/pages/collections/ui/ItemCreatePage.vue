@@ -35,7 +35,7 @@ const data = ref<Record<string, unknown>>({});
 
 const itemsForSuggestions = computed(() => collectionItems.value ?? []);
 
-const { suggestions } = useItemSuggestions({
+const { suggestionLists } = useItemSuggestions({
   fields: computed(() => collection.value?.fields ?? []),
   data,
   items: itemsForSuggestions,
@@ -71,9 +71,10 @@ const handleSave = async () => {
         <ItemField
           v-for="field in collection.fields"
           :key="field.id"
-          v-model:value="data[field.id]"
+          :value="data[field.id]"
           :field="field"
-          :suggestions="suggestions[field.id]?.value"
+          :suggestions="suggestionLists[field.id]"
+          @update:value="(value: unknown) => data[field.id] = value"
         />
       </div>
 

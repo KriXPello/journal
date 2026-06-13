@@ -6,7 +6,10 @@ export const resolveSearchFieldIds = (
   selectedFieldIds: string[],
   allFieldIds: string[],
 ): string[] => {
-  if (selectedFieldIds.length === 0 || selectedFieldIds.length === allFieldIds.length) {
+  if (
+    selectedFieldIds.length === allFieldIds.length
+    && allFieldIds.every(id => selectedFieldIds.includes(id))
+  ) {
     return allFieldIds;
   }
 
@@ -36,5 +39,8 @@ export const searchCollectionItems = (
     keys: fieldIds.map(id => `data.${id}`),
   });
 
-  return fuse.search(trimmedQuery).map(result => result.item);
+  const searchResults = fuse.search(trimmedQuery);
+
+  const result = searchResults.map(result => result.item);
+  return result;
 };

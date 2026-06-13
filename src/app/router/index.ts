@@ -21,7 +21,8 @@ const router = createRouter({
     {
       path: '/',
       name: RouteName.Main,
-      component: CaloriesPage,
+      redirect: { name: RouteName.Collections },
+      // component: CaloriesPage,
     },
     {
       path: '/settings',

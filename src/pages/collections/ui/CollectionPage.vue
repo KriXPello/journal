@@ -1,23 +1,24 @@
 <script setup lang="ts">
+import { refDebounced } from '@vueuse/core';
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
 import InputText from 'primevue/inputtext';
-import MultiSelect from 'primevue/multiselect';
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 import type { DynamicScrollerExposed } from 'vue-virtual-scroller';
+import CollectionFieldFilter from '~/pages/collections/ui/CollectionFieldFilter.vue';
 import CollectionItemLink from '~/pages/collections/ui/CollectionItemLink.vue';
 import type { CollectionPageProps } from '~/shared/routes';
-import { searchCollectionItems } from '~/shared/lib/search';
+import { SEARCH_DEBOUNCE_MS, searchCollectionItems } from '~/shared/lib/search';
 import {
   collectionByIdQuery,
   collectionItemsQuery,
 } from '~/shared/query';
 import { RouteName } from '~/shared/routes';
 import type { Item } from '~/shared/types';
-import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
+import { PageHeader, PageHeaderAction, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
 const VIRTUALIZATION_THRESHOLD = 50;
 const MIN_ITEM_SIZE = 72;
@@ -42,7 +43,22 @@ watch(collectionError, (error) => {
 });
 
 const searchInput = ref('');
+const debouncedSearchInput = refDebounced(searchInput, SEARCH_DEBOUNCE_MS);
 const searchFieldIds = ref<string[]>([]);
+const isSearchFieldsInitialized = ref(false);
+
+watch(
+  () => collection.value?.fields,
+  (fields) => {
+    if (!fields || fields.length === 0 || isSearchFieldsInitialized.value) {
+      return;
+    }
+
+    searchFieldIds.value = fields.map(field => field.id);
+    isSearchFieldsInitialized.value = true;
+  },
+  { immediate: true },
+);
 
 const handleRefresh = () => {
   refetchItems();
@@ -52,18 +68,11 @@ const handleAdd = () => {
   router.push({ name: RouteName.ItemCreate, params: { collectionId } });
 };
 
-const searchFieldOptions = computed(() =>
-  (collection.value?.fields ?? []).map(field => ({
-    label: field.label,
-    value: field.id,
-  })),
-);
-
 const searchedItems = computed(() => {
   const list = collectionItems.value ?? [];
   const allFieldIds = (collection.value?.fields ?? []).map(field => field.id);
 
-  return searchCollectionItems(list, searchInput.value, {
+  return searchCollectionItems(list, debouncedSearchInput.value, {
     selectedFieldIds: searchFieldIds.value,
     allFieldIds,
   });
@@ -73,7 +82,7 @@ const searchedItemsSignature = computed(() =>
   searchedItems.value.map(item => item.id).join('\n'),
 );
 
-watch([searchInput, searchFieldIds], () => {
+watch([debouncedSearchInput, searchFieldIds], () => {
   nextTick(() => {
     scrollerRef.value?.scrollToPosition(0);
   });
@@ -99,7 +108,7 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
       <PageHeader @back="router.back">
         <PageHeaderTitle title="Коллекция" :subtitle="collection.label" />
         <PageHeaderActions>
-          <Button
+          <PageHeaderAction
             rounded
             text
             severity="secondary"
@@ -109,8 +118,8 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
             @click="handleRefresh"
           >
             <div class="i-[mdi--refresh] size-6" />
-          </Button>
-          <Button
+          </PageHeaderAction>
+          <PageHeaderAction
             rounded
             text
             severity="secondary"
@@ -119,24 +128,15 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
             @click="handleSettings"
           >
             <div class="i-[mdi--cog] size-6" />
-          </Button>
+          </PageHeaderAction>
         </PageHeaderActions>
       </PageHeader>
 
       <div class="flex gap-1">
-        <IftaLabel class="w-40">
-          <MultiSelect
-            v-model="searchFieldIds"
-            input-id="search-field"
-            :options="searchFieldOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="Все поля"
-            display="chip"
-            class="w-full"
-          />
-          <label for="search-field">Поля</label>
-        </IftaLabel>
+        <CollectionFieldFilter
+          v-model="searchFieldIds"
+          :fields="collection.fields"
+        />
         <IftaLabel class="grow">
           <InputText
             id="search-value"
@@ -155,7 +155,7 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
           :items="searchedItems"
           key-field="id"
           :min-item-size="MIN_ITEM_SIZE"
-          :enabled="searchedItems.length >= VIRTUALIZATION_THRESHOLD"
+          :enabled="(collectionItems?.length ?? 0) >= VIRTUALIZATION_THRESHOLD"
           flow-mode
           class="size-full pb-20"
         >

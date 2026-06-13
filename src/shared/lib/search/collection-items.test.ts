@@ -27,8 +27,8 @@ const items: Item[] = [
 const allFieldIds = [titleFieldId, yearFieldId];
 
 describe('resolveSearchFieldIds', () => {
-  it('returns all fields when nothing is selected', () => {
-    expect(resolveSearchFieldIds([], allFieldIds)).toEqual(allFieldIds);
+  it('returns no fields when nothing is selected', () => {
+    expect(resolveSearchFieldIds([], allFieldIds)).toEqual([]);
   });
 
   it('returns all fields when every field is selected', () => {
@@ -50,7 +50,7 @@ describe('searchCollectionItems', () => {
 
   it('finds items by exact substring match', () => {
     const result = searchCollectionItems(items, 'Inception', {
-      selectedFieldIds: [],
+      selectedFieldIds: allFieldIds,
       allFieldIds,
     });
 
@@ -59,11 +59,20 @@ describe('searchCollectionItems', () => {
 
   it('finds items with typos', () => {
     const result = searchCollectionItems(items, 'Incepton', {
-      selectedFieldIds: [],
+      selectedFieldIds: allFieldIds,
       allFieldIds,
     });
 
     expect(result.map(item => item.id)).toEqual(['item-1']);
+  });
+
+  it('returns all items when no fields are selected', () => {
+    const result = searchCollectionItems(items, 'Inception', {
+      selectedFieldIds: [],
+      allFieldIds,
+    });
+
+    expect(result).toEqual(items);
   });
 
   it('searches only selected fields', () => {

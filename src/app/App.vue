@@ -12,10 +12,10 @@ type Page = {
 };
 
 const pages: Page[] = [
-  {
-    to: { name: RouteName.Main },
-    icon: 'i-[mdi--calculator-variant]',
-  },
+  // {
+  //   to: { name: RouteName.Main },
+  //   icon: 'i-[mdi--calculator-variant]',
+  // },
   {
     to: { name: RouteName.Collections },
     icon: 'i-[mdi--database]',

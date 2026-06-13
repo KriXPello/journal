@@ -2,10 +2,9 @@
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useQuery } from '@pinia/colada';
-import Button from 'primevue/button';
 import { collectionsQuery } from '~/shared/query';
 import { RouteName } from '~/shared/routes';
-import { PageHeader, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
+import { PageHeader, PageHeaderAction, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
 const router = useRouter();
 
@@ -46,7 +45,7 @@ const sortedCollections = computed(() =>
         <PageHeaderTitle title="Коллекции" />
         <PageHeaderActions>
           <template v-if="isEditMode">
-            <Button
+            <PageHeaderAction
               rounded
               text
               severity="secondary"
@@ -55,8 +54,8 @@ const sortedCollections = computed(() =>
               @click="handleEditCancel"
             >
               <div class="i-[mdi--close] size-6" />
-            </Button>
-            <Button
+            </PageHeaderAction>
+            <PageHeaderAction
               rounded
               text
               severity="secondary"
@@ -65,11 +64,11 @@ const sortedCollections = computed(() =>
               @click="handleEditSave"
             >
               <div class="i-[mdi--check] size-6" />
-            </Button>
+            </PageHeaderAction>
           </template>
 
           <template v-else>
-            <Button
+            <PageHeaderAction
               rounded
               text
               severity="secondary"
@@ -78,8 +77,8 @@ const sortedCollections = computed(() =>
               @click="handleCreate"
             >
               <div class="i-[mdi--plus] size-6" />
-            </Button>
-            <Button
+            </PageHeaderAction>
+            <PageHeaderAction
               rounded
               text
               severity="secondary"
@@ -89,8 +88,8 @@ const sortedCollections = computed(() =>
               @click="handleRefresh"
             >
               <div class="i-[mdi--refresh] size-6" />
-            </Button>
-            <Button
+            </PageHeaderAction>
+            <PageHeaderAction
               rounded
               text
               severity="secondary"
@@ -99,7 +98,7 @@ const sortedCollections = computed(() =>
               @click="handleSettings"
             >
               <div class="i-[mdi--cog] size-6" />
-            </Button>
+            </PageHeaderAction>
           </template>
         </PageHeaderActions>
       </PageHeader>
