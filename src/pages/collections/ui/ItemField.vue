@@ -94,6 +94,7 @@ const applySuggestion = (text: string) => {
         :id="inputId"
         v-model="valueBind"
         class="w-full input-number-no-arrows"
+        locale="en-US"
         :use-grouping="false"
         input-class="w-full input-number-no-arrows"
       />

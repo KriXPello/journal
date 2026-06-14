@@ -155,7 +155,6 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
           :items="searchedItems"
           key-field="id"
           :min-item-size="MIN_ITEM_SIZE"
-          :enabled="(collectionItems?.length ?? 0) >= VIRTUALIZATION_THRESHOLD"
           flow-mode
           class="size-full pb-20"
         >
