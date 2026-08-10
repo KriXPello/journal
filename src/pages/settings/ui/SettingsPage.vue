@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue';
 import { useMutation } from '@pinia/colada';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
-import { useAppNotify } from '~/shared/lib/interaction';
+import { ref, useTemplateRef } from 'vue';
 import { buildAppDataBackupFileName, parseAppDataBackup, serializeAppDataBackup } from '~/shared/lib/app-data';
+import { useAppNotify } from '~/shared/lib/interaction';
 import {
   clearAllAppDataMutation,
   exportBackupMutation,
   importBackupMutation,
 } from '~/shared/query';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
+import ObjectStorageSettingsCard from './ObjectStorageSettingsCard.vue';
 
 const { showError, showSuccess, confirmAction } = useAppNotify();
 
@@ -127,6 +128,8 @@ const handleClearAll = async () => {
             </p>
           </template>
         </Card>
+
+        <ObjectStorageSettingsCard />
 
         <Card class="bg-surface-100 border border-danger/30">
           <template #title>

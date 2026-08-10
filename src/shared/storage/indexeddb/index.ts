@@ -1,6 +1,13 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import { getRandomId } from '~/shared/lib/system';
-import type { AppDataBackup, AppDataBackupV1, Collection, DateObject, FoodTakeGroupBackupRecord, Item } from '~/shared/types';
+import type {
+  AppDataBackup,
+  AppDataBackupV1,
+  Collection,
+  DateObject,
+  FoodTakeGroupBackupRecord,
+  Item,
+} from '~/shared/types';
 import type {
   PayloadCollectionCreate,
   PayloadCollectionUpdate,
@@ -88,7 +95,7 @@ export const createIndexedDbRepositories = async (dbName = 'app-db') => {
         id: getRandomId(),
         label: payload.label,
         orderNum: max + 1,
-        fields: payload.fields.map(f => ({
+        fields: payload.fields.map((f) => ({
           id: getRandomId(),
           label: f.label,
           kind: f.kind,
@@ -107,7 +114,7 @@ export const createIndexedDbRepositories = async (dbName = 'app-db') => {
         id: payload.id,
         label: payload.label,
         orderNum: oldRecord!.orderNum,
-        fields: payload.fields.map(f => ({
+        fields: payload.fields.map((f) => ({
           id: f.id,
           label: f.label,
           kind: f.kind,

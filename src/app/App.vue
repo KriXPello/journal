@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { RouterLink, RouterView, type RouteLocationNamedRaw } from 'vue-router';
 import ConfirmDialog from 'primevue/confirmdialog';
 import Toast from 'primevue/toast';
+import { useAppNotify } from '~/shared/lib/interaction';
+import { runScheduledS3Backup } from '~/shared/lib/s3-backup';
 import { RouteName } from '~/shared/routes';
 import { InstallButton } from '~/shared/ui';
 
@@ -10,6 +13,20 @@ type Page = {
   to: RouteLocationNamedRaw;
   icon: string;
 };
+
+const { showError, showSuccess } = useAppNotify();
+
+onMounted(async () => {
+  try {
+    const result = await runScheduledS3Backup();
+    if (!result.attempted) {
+      return;
+    }
+    showSuccess('Резервное копирование выполнено');
+  } catch {
+    showError('Не удалось выполнить резервное копирование');
+  }
+});
 
 const pages: Page[] = [
   // {
