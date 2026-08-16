@@ -43,5 +43,15 @@ export const searchFieldSuggestions = (
     keys: ['text'],
   });
 
-  return fuse.search(trimmedQuery).map(result => result.item);
+  const normalizedQuery = trimmedQuery.toLowerCase();
+  const substringResults = candidates.filter(candidate =>
+    candidate.text.toLowerCase().includes(normalizedQuery),
+  );
+  const substringCandidates = new Set(substringResults.map(x => x.key));
+  const fuzzyResults = fuse
+    .search(trimmedQuery)
+    .map(result => result.item)
+    .filter(candidate => !substringCandidates.has(candidate.key));
+
+  return [...substringResults, ...fuzzyResults];
 };

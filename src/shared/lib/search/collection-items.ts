@@ -39,8 +39,16 @@ export const searchCollectionItems = (
     keys: fieldIds.map(id => `data.${id}`),
   });
 
-  const searchResults = fuse.search(trimmedQuery);
+  const normalizedQuery = trimmedQuery.toLowerCase();
+  const substringResults = items.filter(item => fieldIds.some(fieldId => {
+    const value = item.data[fieldId];
+    return value != undefined && String(value).toLowerCase().includes(normalizedQuery);
+  }));
+  const substringItems = new Set(substringResults.map(x => x.id));
+  const fuzzyResults = fuse
+    .search(trimmedQuery)
+    .map(result => result.item)
+    .filter(item => !substringItems.has(item.id));
 
-  const result = searchResults.map(result => result.item);
-  return result;
+  return [...substringResults, ...fuzzyResults];
 };
