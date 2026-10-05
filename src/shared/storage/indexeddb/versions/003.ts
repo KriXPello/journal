@@ -1,6 +1,8 @@
 import type { DBSchema, IDBPDatabase, IDBPTransaction, StoreNames } from 'idb';
 import type { Collection, DateObject, FoodTake, Item } from '~/shared/types';
 
+export type LegacyItem = Omit<Item, 'groupId'>;
+
 export type FoodTakeKey = `${number}-${number}-${number}`;
 export type StoredFoodTakeGroup = {
   key: FoodTakeKey;
@@ -11,7 +13,7 @@ export type StoredFoodTakeGroup = {
 export interface Schema extends DBSchema {
   items: {
     key: string;
-    value: Item;
+    value: LegacyItem;
     indexes: {
       'by-collection-id': string;
     };

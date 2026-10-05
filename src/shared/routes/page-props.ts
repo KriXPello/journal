@@ -1,5 +1,6 @@
 export type CollectionPageProps = {
   collectionId: string;
+  groupId?: string;
 };
 
 export type CollectionEditPageProps = {
@@ -8,6 +9,7 @@ export type CollectionEditPageProps = {
 
 export type ItemCreatePageProps = {
   collectionId: string;
+  groupId: string | null;
 };
 
 export type ItemEditPageProps = {

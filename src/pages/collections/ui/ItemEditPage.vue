@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMutation, useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import type { ItemEditPageProps } from '~/shared/routes';
 import { useItemSuggestions } from '~/pages/collections/model/useItemSuggestions';
 import ItemField from '~/pages/collections/ui/ItemField.vue';
+import GroupDestinationDialog from '~/pages/collections/ui/GroupDestinationDialog.vue';
 import { useAppNotify } from '~/shared/lib/interaction';
 import {
   collectionByIdQuery,
+  collectionGroupsQuery,
   collectionItemsQuery,
   itemByIdQuery,
   removeItemMutation,
@@ -34,6 +36,10 @@ const { data: collectionItems } = useQuery(
   () => collectionItemsQuery({ collectionId }),
 );
 
+const { data: groups, isLoading: isGroupsLoading } = useQuery(() => collectionGroupsQuery({ collectionId }));
+const destinationDialog = useTemplateRef<InstanceType<typeof GroupDestinationDialog>>('destinationDialog');
+const isMoving = computed(() => destinationDialog.value?.isMoving ?? false);
+
 watch([collectionError, itemError], ([collectionErr, itemErr]) => {
   if (collectionErr || itemErr) {
     router.replace({ name: RouteName.Collection, params: { collectionId } });
@@ -42,9 +48,9 @@ watch([collectionError, itemError], ([collectionErr, itemErr]) => {
 
 const data = ref<Record<string, unknown>>({});
 
-watch(item, (value) => {
-  if (value) {
-    data.value = { ...value.data };
+watch(() => item.value?.id, () => {
+  if (item.value) {
+    data.value = { ...item.value.data };
   }
 }, { immediate: true });
 
@@ -86,7 +92,7 @@ const handleDelete = async () => {
   }
 };
 
-const isLoading = computed(() => isSaving.value || isRemoving.value);
+const isLoading = computed(() => isSaving.value || isRemoving.value || isMoving.value);
 
 </script>
 
@@ -103,9 +109,21 @@ const isLoading = computed(() => isSaving.value || isRemoving.value);
             rounded
             text
             severity="secondary"
+            title="Переместить"
+            aria-label="Переместить"
+            :disabled="isLoading || isGroupsLoading"
+            @click="destinationDialog?.open({ kind: 'item', item })"
+          >
+            <div class="i-[mdi--folder-move-outline] size-6" />
+          </PageHeaderAction>
+          <PageHeaderAction
+            rounded
+            text
+            severity="secondary"
             title="Удалить элемент"
             aria-label="Удалить элемент"
             :loading="isRemoving"
+            :disabled="isSaving || isMoving"
             @click="handleDelete"
           >
             <div class="i-[mdi--trash] text-danger size-6" />
@@ -134,6 +152,11 @@ const isLoading = computed(() => isSaving.value || isRemoving.value);
           <div class="i-[mdi--content-save-check-outline] size-6" />
         </Button>
       </div>
+      <GroupDestinationDialog
+        ref="destinationDialog"
+        :groups="groups ?? []"
+        :collection-label="collection.label"
+      />
     </div>
   </div>
 </template>

@@ -4,11 +4,10 @@ import type {
   PayloadCollectionUpdate,
 } from '~/shared/storage/contracts';
 import { getRepositories } from '~/shared/storage/instance';
+import { invalidateAllAppData } from './invalidate';
+import { COLLECTION_QUERY_KEYS } from './keys';
 
-export const COLLECTION_QUERY_KEYS = {
-  root: ['collections'] as const,
-  byId: (id: string) => [...COLLECTION_QUERY_KEYS.root, id] as const,
-};
+export { COLLECTION_QUERY_KEYS } from './keys';
 
 export const collectionsQuery = defineQueryOptions({
   key: COLLECTION_QUERY_KEYS.root,
@@ -48,9 +47,5 @@ export const updateCollectionMutation = defineMutationOptions({
 
 export const removeCollectionMutation = defineMutationOptions({
   mutation: (id: string) => getRepositories().collection.remove(id),
-  onSuccess: (_data, id) => {
-    const queryCache = useQueryCache();
-    queryCache.invalidateQueries({ key: COLLECTION_QUERY_KEYS.root });
-    queryCache.invalidateQueries({ key: COLLECTION_QUERY_KEYS.byId(id) });
-  },
+  onSuccess: invalidateAllAppData,
 });

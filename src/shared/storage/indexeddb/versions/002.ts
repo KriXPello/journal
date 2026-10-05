@@ -11,7 +11,7 @@ export type StoredFoodTakeGroup = {
 export interface Schema extends DBSchema {
   items: {
     key: string;
-    value: Item;
+    value: Omit<Item, 'groupId'>;
   };
   'item-categories': {
     key: string;

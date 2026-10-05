@@ -2,15 +2,13 @@ import { defineMutationOptions, defineQueryOptions, useQueryCache } from '@pinia
 import type {
   CreateItemPayload,
   UpdateItemPayload,
+  ItemBatchPayload,
+  ItemRepository,
 } from '~/shared/storage/contracts';
 import { getRepositories } from '~/shared/storage/instance';
+import { ITEM_QUERY_KEYS } from './keys';
 
-export const ITEM_QUERY_KEYS = {
-  root: ['items'] as const,
-  byId: (id: string) => [...ITEM_QUERY_KEYS.root, id] as const,
-  byCollection: (collectionId: string) =>
-    [...ITEM_QUERY_KEYS.root, 'by-collection', collectionId] as const,
-};
+export { ITEM_QUERY_KEYS } from './keys';
 
 export const collectionItemsQuery = defineQueryOptions(
   ({ collectionId }: { collectionId: string }) => ({
@@ -59,4 +57,31 @@ export const removeItemMutation = defineMutationOptions({
     queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byCollection(vars.collectionId) });
     queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byId(vars.id) });
   },
+});
+
+export const moveItemMutation = defineMutationOptions({
+  mutation: (payload: { id: string; groupId: string | null }) => getRepositories().item.move(payload),
+  onSuccess: (item) => {
+    const queryCache = useQueryCache();
+    queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byCollection(item.collectionId) });
+    queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byId(item.id) });
+  },
+});
+
+const invalidateBatchItems = (collectionId: string, ids: string[]) => {
+  const queryCache = useQueryCache();
+  queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byCollection(collectionId) });
+  for (const id of new Set(ids)) {
+    queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byId(id) });
+  }
+};
+
+export const removeItemsMutation = defineMutationOptions({
+  mutation: (payload: ItemBatchPayload) => getRepositories().item.removeMany(payload),
+  onSuccess: (_data, payload) => invalidateBatchItems(payload.collectionId, payload.ids),
+});
+
+export const moveItemsMutation = defineMutationOptions({
+  mutation: (payload: Parameters<ItemRepository['moveMany']>[0]) => getRepositories().item.moveMany(payload),
+  onSuccess: (_data, payload) => invalidateBatchItems(payload.collectionId, payload.ids),
 });

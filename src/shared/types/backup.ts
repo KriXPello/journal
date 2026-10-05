@@ -1,5 +1,5 @@
 import type { DateObject, FoodTake } from '~/shared/types/calories';
-import type { Collection, Item } from '~/shared/types/collections';
+import type { Collection, CollectionGroup, Item } from '~/shared/types/collections';
 
 export type FoodTakeGroupBackupRecord = {
   key: string;
@@ -12,9 +12,20 @@ export type AppDataBackupV1 = {
   exportedAt: string;
   data: {
     collections: Collection[];
-    items: Item[];
+    items: Omit<Item, 'groupId'>[];
     foodTakeGroups: FoodTakeGroupBackupRecord[];
   };
 };
 
-export type AppDataBackup = AppDataBackupV1;
+export type AppDataBackupV2 = {
+  version: 2;
+  exportedAt: string;
+  data: {
+    collections: Collection[];
+    items: Item[];
+    foodTakeGroups: FoodTakeGroupBackupRecord[];
+    groups: CollectionGroup[];
+  };
+};
+
+export type AppDataBackup = AppDataBackupV1 | AppDataBackupV2;

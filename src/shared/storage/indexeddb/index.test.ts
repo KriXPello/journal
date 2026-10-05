@@ -1,6 +1,6 @@
 import { openDB } from 'idb';
 import { describe, expect, it } from 'vitest';
-import type { AppDataBackupV1, Collection, Item } from '~/shared/types';
+import type { AppDataBackupV1, Collection } from '~/shared/types';
 import { createIndexedDbRepositories } from './index';
 import type { Schema as SchemaV1 } from './versions/001';
 import * as v001 from './versions/001';
@@ -35,6 +35,7 @@ describe('createIndexedDbRepositories', () => {
 
     await repositories.item.create({
       collectionId: collection.id,
+      groupId: null,
       data: {
         [titleField.id]: 'Inception',
       },
@@ -57,7 +58,7 @@ describe('createIndexedDbRepositories', () => {
     const exportedItem = backup.data.items[0]!;
     const exportedFoodTakeGroup = backup.data.foodTakeGroups[0]!;
 
-    expect(backup.version).toBe(1);
+    expect(backup.version).toBe(2);
     expect(backup.data.collections).toHaveLength(1);
     expect(backup.data.items).toHaveLength(1);
     expect(backup.data.foodTakeGroups).toHaveLength(1);
@@ -176,6 +177,7 @@ describe('createIndexedDbRepositories', () => {
       collections: 2,
       items: 2,
       foodTakeGroups: 2,
+      groups: 0,
     });
     expect(exported.data.collections).toHaveLength(2);
     expect(exported.data.items).toHaveLength(2);
@@ -237,7 +239,7 @@ describe('createIndexedDbRepositories', () => {
       orderNum: 1,
       fields: [],
     };
-    const item: Item = {
+    const item = {
       id: 'item-1',
       collectionId: 'collection-1',
       data: {},
@@ -251,7 +253,7 @@ describe('createIndexedDbRepositories', () => {
     const backup = await repositories.appData.exportBackup();
 
     expect(backup.data.collections).toEqual([collection]);
-    expect(backup.data.items).toEqual([item]);
+    expect(backup.data.items).toEqual([{ ...item, groupId: null }]);
     expect(backup.data.foodTakeGroups).toEqual([]);
 
     await repositories.foodTake.createOrUpdateGroup({

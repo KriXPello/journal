@@ -4,17 +4,19 @@ import { useRouter } from 'vue-router';
 import { useMutation, useQuery } from '@pinia/colada';
 import Button from 'primevue/button';
 import type { ItemCreatePageProps } from '~/shared/routes';
+import { createGroupHierarchy } from '~/pages/collections/model/group-hierarchy';
 import { useItemSuggestions } from '~/pages/collections/model/useItemSuggestions';
 import ItemField from '~/pages/collections/ui/ItemField.vue';
 import { useAppNotify } from '~/shared/lib/interaction';
 import {
   collectionByIdQuery,
+  collectionGroupsQuery,
   collectionItemsQuery,
   createItemMutation,
 } from '~/shared/query';
 import { PageHeader, PageHeaderTitle } from '~/shared/ui';
 
-const { collectionId } = defineProps<ItemCreatePageProps>();
+const { collectionId, groupId } = defineProps<ItemCreatePageProps>();
 
 const router = useRouter();
 const { showError } = useAppNotify();
@@ -26,6 +28,14 @@ const { data: collection, error: collectionError } = useQuery(
 const { data: collectionItems } = useQuery(
   () => collectionItemsQuery({ collectionId }),
 );
+
+const { data: groups } = useQuery(() => collectionGroupsQuery({ collectionId }));
+const parentPath = computed(() => {
+  if (!collection.value) return '';
+
+  const path = createGroupHierarchy(groups.value ?? []).getPath(groupId);
+  return [collection.value.label, ...path.map(group => group.label)].join(' / ');
+});
 
 watch(collectionError, () => {
   router.back();
@@ -47,6 +57,7 @@ const handleSave = async () => {
   try {
     await createItem({
       collectionId,
+      groupId,
       data: data.value,
     });
 
@@ -64,7 +75,8 @@ const handleSave = async () => {
       <PageHeader @back="router.back">
         <PageHeaderTitle
           title="Создание элемента"
-          :subtitle="'Коллекция: ' + collection.label"
+          :subtitle="parentPath"
+          class="min-w-0 break-words"
         />
       </PageHeader>
       <div class="grow min-h-0 px-2 py-4 pb-20 overflow-y-auto flex flex-col gap-4">

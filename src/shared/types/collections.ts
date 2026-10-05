@@ -31,7 +31,15 @@ export type Collection = {
 export type Item = {
   id: string;
   collectionId: string;
+  groupId: string | null;
   data: Record<CollectionField['id'], unknown>;
+};
+
+export type CollectionGroup = {
+  id: string;
+  collectionId: string;
+  parentId: string | null;
+  label: string;
 };
 
 export type Suggestion = {

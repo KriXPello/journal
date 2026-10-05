@@ -55,7 +55,8 @@ const handleImport = async (event: Event) => {
     const text = await file.text();
     const backup = parseAppDataBackup(text);
     const summary = await importBackup(backup);
-    lastImportMessage.value = `Импортировано: коллекций ${summary.collections}, записей ${summary.items}, дней калорий ${summary.foodTakeGroups}.`;
+    lastImportMessage.value = `Импортировано: коллекций ${summary.collections}, групп ${summary.groups}, `
+      + `записей ${summary.items}, дней калорий ${summary.foodTakeGroups}.`;
     showSuccess(lastImportMessage.value);
   } catch (err) {
     showError('Ошибка импорта: ' + String(err));
@@ -96,7 +97,7 @@ const handleClearAll = async () => {
           </template>
           <template #content>
             <p class="mb-3">
-              Экспортирует текущие коллекции, записи и данные калорий в versioned JSON файл.
+              Экспортирует текущие коллекции, группы, записи и данные калорий в versioned JSON файл.
             </p>
             <Button label="Экспортировать данные" :loading="isExporting" @click="handleExport" />
           </template>

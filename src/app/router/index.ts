@@ -56,6 +56,15 @@ const router = createRouter({
           }),
         },
         {
+          path: 'groups/:groupId',
+          name: RouteName.CollectionGroup,
+          component: CollectionPage,
+          props: (route): CollectionPageProps => ({
+            collectionId: route.params.collectionId as string,
+            groupId: route.params.groupId as string,
+          }),
+        },
+        {
           path: 'edit',
           name: RouteName.CollectionEdit,
           component: CollectionEditPage,
@@ -69,6 +78,7 @@ const router = createRouter({
           component: ItemCreatePage,
           props: (route): ItemCreatePageProps => ({
             collectionId: route.params.collectionId as string,
+            groupId: typeof route.query.groupId === 'string' ? route.query.groupId : null,
           }),
         },
         {

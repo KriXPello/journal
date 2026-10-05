@@ -2,15 +2,9 @@ import { defineMutationOptions, defineQueryOptions, useQueryCache } from '@pinia
 import type { DateObject, FoodTake } from '~/shared/types';
 import type { PayloadFoodTakeCreateOrUpdateGroup } from '~/shared/storage/contracts';
 import { getRepositories } from '~/shared/storage/instance';
+import { FOOD_TAKE_QUERY_KEYS } from './keys';
 
-export const foodTakeDateKey = (date: DateObject) =>
-  `${date.year}-${date.month}-${date.day}`;
-
-export const FOOD_TAKE_QUERY_KEYS = {
-  root: ['food-takes'] as const,
-  byDate: (date: DateObject) =>
-    [...FOOD_TAKE_QUERY_KEYS.root, foodTakeDateKey(date)] as const,
-};
+export { FOOD_TAKE_QUERY_KEYS, foodTakeDateKey } from './keys';
 
 export const foodTakeGroupByDateQuery = defineQueryOptions(
   ({ date }: { date: DateObject }) => ({

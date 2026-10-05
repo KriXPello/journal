@@ -8,6 +8,7 @@ const items: Item[] = [
   {
     id: 'item-1',
     collectionId: 'collection-1',
+    groupId: null,
     data: {
       [fieldId]: 'Inception',
     },
@@ -15,6 +16,7 @@ const items: Item[] = [
   {
     id: 'item-2',
     collectionId: 'collection-1',
+    groupId: null,
     data: {
       [fieldId]: 'Inception',
     },
@@ -22,6 +24,7 @@ const items: Item[] = [
   {
     id: 'item-3',
     collectionId: 'collection-1',
+    groupId: null,
     data: {
       [fieldId]: 'Interstellar',
     },

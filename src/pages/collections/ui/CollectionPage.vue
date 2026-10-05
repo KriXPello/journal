@@ -1,121 +1,76 @@
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core';
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useQuery } from '@pinia/colada';
+import { useTemplateRef, watch } from 'vue';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
 import InputText from 'primevue/inputtext';
-import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
-import type { DynamicScrollerExposed } from 'vue-virtual-scroller';
+import Menu from 'primevue/menu';
+import { useCollectionActions } from '~/pages/collections/model/useCollectionActions';
+import { useCollectionScope } from '~/pages/collections/model/useCollectionScope';
+import { useCollectionSelection } from '~/pages/collections/model/useCollectionSelection';
+import { useCollectionView } from '~/pages/collections/model/useCollectionView';
 import CollectionFieldFilter from '~/pages/collections/ui/CollectionFieldFilter.vue';
-import CollectionItemLink from '~/pages/collections/ui/CollectionItemLink.vue';
+import CollectionRows from '~/pages/collections/ui/CollectionRows.vue';
+import CollectionSelectionFooter from '~/pages/collections/ui/CollectionSelectionFooter.vue';
+import GroupDestinationDialog from '~/pages/collections/ui/GroupDestinationDialog.vue';
+import GroupFormDialog from '~/pages/collections/ui/GroupFormDialog.vue';
 import type { CollectionPageProps } from '~/shared/routes';
-import { SEARCH_DEBOUNCE_MS, searchCollectionItems } from '~/shared/lib/search';
-import {
-  collectionByIdQuery,
-  collectionItemsQuery,
-} from '~/shared/query';
-import { RouteName } from '~/shared/routes';
-import type { Item } from '~/shared/types';
 import { PageHeader, PageHeaderAction, PageHeaderActions, PageHeaderTitle } from '~/shared/ui';
 
-const VIRTUALIZATION_THRESHOLD = 50;
-const MIN_ITEM_SIZE = 72;
+const { collectionId, groupId } = defineProps<CollectionPageProps>();
+const pageMenu = useTemplateRef<InstanceType<typeof Menu>>('pageMenu');
+const groupMenu = useTemplateRef<InstanceType<typeof Menu>>('groupMenu');
+const groupForm = useTemplateRef<InstanceType<typeof GroupFormDialog>>('groupForm');
+const groupDestination = useTemplateRef<InstanceType<typeof GroupDestinationDialog>>('groupDestination');
 
-const { collectionId } = defineProps<CollectionPageProps>();
+const scope = useCollectionScope({
+  collectionId: () => collectionId,
+  groupId: () => groupId,
+});
+const {
+  collection, groups, fields, currentId, header,
+  isLoading, isGroupsLoading, goBack, createItem, refresh,
+} = scope;
+const { view, searchInput, searchFieldIds, searchQuery, searching, rows, activateGroup } = useCollectionView(scope);
+const selection = useCollectionSelection(scope, rows, groupDestination);
+const {
+  isSelecting, selectedIds, selectedCount, availableCount, allSelected, partiallySelected,
+  isBusy: isSelectionBusy, startSelection, cancelSelection, requestExit, toggleItem, toggleAll,
+} = selection;
+const { pageActions, groupActions, isGroupBusy, openGroupMenu } = useCollectionActions(scope, view, selection, {
+  groupMenu,
+  groupForm,
+  groupDestination,
+});
 
-const router = useRouter();
-const scrollerRef = useTemplateRef<DynamicScrollerExposed<Item>>('scroller');
-
-const { data: collection, error: collectionError, isLoading: isCollectionLoading } = useQuery(
-  () => collectionByIdQuery({ id: collectionId }),
-);
-
-const { data: collectionItems, refetch: refetchItems, isLoading: isItemsLoading } = useQuery(
-  () => collectionItemsQuery({ collectionId }),
-);
-
-watch(collectionError, (error) => {
-  if (error) {
-    router.replace({ name: RouteName.Collections });
+const handleBack = () => {
+  if (isSelectionBusy.value) return;
+  if (isSelecting.value && currentId.value === null) {
+    requestExit();
+  } else {
+    goBack();
   }
-});
-
-const searchInput = ref('');
-const debouncedSearchInput = refDebounced(searchInput, SEARCH_DEBOUNCE_MS);
-const searchFieldIds = ref<string[]>([]);
-const isSearchFieldsInitialized = ref(false);
-
-watch(
-  () => collection.value?.fields,
-  (fields) => {
-    if (!fields || fields.length === 0 || isSearchFieldsInitialized.value) {
-      return;
-    }
-
-    searchFieldIds.value = fields.map(field => field.id);
-    isSearchFieldsInitialized.value = true;
-  },
-  { immediate: true },
-);
-
-const handleRefresh = () => {
-  refetchItems();
 };
 
-const handleAdd = () => {
-  router.push({ name: RouteName.ItemCreate, params: { collectionId } });
-};
-
-const searchedItems = computed(() => {
-  const list = collectionItems.value ?? [];
-  const allFieldIds = (collection.value?.fields ?? []).map(field => field.id);
-
-  return searchCollectionItems(list, debouncedSearchInput.value, {
-    selectedFieldIds: searchFieldIds.value,
-    allFieldIds,
-  });
-});
-
-const searchedItemsSignature = computed(() =>
-  searchedItems.value.map(item => item.id).join('\n'),
-);
-
-watch([debouncedSearchInput, searchFieldIds], () => {
-  nextTick(() => {
-    scrollerRef.value?.scrollToPosition(0);
-  });
+const content = useTemplateRef<InstanceType<typeof CollectionRows>>('content');
+watch([searchQuery, searchFieldIds, currentId, view], () => {
+  content.value?.scrollToStart();
 }, { flush: 'post' });
-
-watch(searchedItemsSignature, () => {
-  nextTick(() => {
-    scrollerRef.value?.forceUpdate(false);
-  });
-}, { flush: 'post' });
-
-const handleSettings = () => {
-  router.push({ name: RouteName.CollectionEdit, params: { collectionId } });
-};
-
-const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.value);
-
 </script>
 
 <template>
   <div v-if="collection" class="size-full flex flex-col items-center relative">
     <div class="size-full px-2 max-w-xl relative flex flex-col">
-      <PageHeader @back="router.back">
-        <PageHeaderTitle title="Коллекция" :subtitle="collection.label" />
-        <PageHeaderActions>
+      <PageHeader @back="handleBack">
+        <PageHeaderTitle :title="header.title" :subtitle="header.subtitle" class="min-w-0 break-words" />
+        <PageHeaderActions class="shrink-0">
           <PageHeaderAction
             rounded
             text
             severity="secondary"
-            title="Обновить"
             aria-label="Обновить"
             :loading="isLoading"
-            @click="handleRefresh"
+            :disabled="isSelectionBusy"
+            @click="refresh"
           >
             <div class="i-[mdi--refresh] size-6" />
           </PageHeaderAction>
@@ -123,64 +78,69 @@ const isLoading = computed(() => isCollectionLoading.value || isItemsLoading.val
             rounded
             text
             severity="secondary"
-            title="Настройки"
-            aria-label="Настройки"
-            @click="handleSettings"
+            aria-label="Меню коллекции"
+            aria-haspopup="true"
+            aria-controls="collection-menu"
+            :disabled="isGroupBusy || isGroupsLoading || isSelectionBusy"
+            @click="pageMenu?.toggle($event)"
           >
-            <div class="i-[mdi--cog] size-6" />
+            <div class="i-[mdi--dots-vertical] size-6" />
           </PageHeaderAction>
         </PageHeaderActions>
       </PageHeader>
+      <Menu id="collection-menu" ref="pageMenu" :model="pageActions" popup />
+      <Menu id="group-menu" ref="groupMenu" :model="groupActions" popup />
 
       <div class="flex gap-1">
-        <CollectionFieldFilter
-          v-model="searchFieldIds"
-          :fields="collection.fields"
-        />
-        <IftaLabel class="grow">
-          <InputText
-            id="search-value"
-            v-model="searchInput"
-            class="w-full"
-            type="text"
-          />
-          <label for="search-value">Значение</label>
+        <CollectionFieldFilter v-model="searchFieldIds" :fields="fields" />
+        <IftaLabel class="grow min-w-0">
+          <InputText id="search-value" v-model="searchInput" class="w-full" type="search" />
+          <label for="search-value">Поиск, включая подгруппы</label>
         </IftaLabel>
       </div>
 
       <div class="grow min-h-0 mt-4">
-        <DynamicScroller
-          v-if="searchedItems.length > 0"
-          ref="scroller"
-          :items="searchedItems"
-          key-field="id"
-          :min-item-size="MIN_ITEM_SIZE"
-          flow-mode
-          class="size-full pb-20"
-        >
-          <template #default="{ item, index, active }">
-            <DynamicScrollerItem
-              :item="item"
-              :active="active"
-              :index="index"
-            >
-              <CollectionItemLink
-                v-if="active"
-                :key="item.id"
-                :collection-id="collectionId"
-                :item="item"
-                :fields="collection.fields"
-              />
-            </DynamicScrollerItem>
-          </template>
-        </DynamicScroller>
+        <CollectionRows
+          ref="content"
+          :collection-id="collectionId"
+          :fields="fields"
+          :rows="rows"
+          :view="view"
+          :searching="searching"
+          :loading="isLoading"
+          :group-actions-disabled="isGroupBusy || isSelecting"
+          :selection-active="isSelecting"
+          :selected-ids="selectedIds"
+          :selection-disabled="isSelectionBusy || isGroupBusy"
+          @activate-group="activateGroup"
+          @group-menu="openGroupMenu"
+          @toggle-item="toggleItem"
+          @select-item="startSelection"
+        />
       </div>
 
-      <div class="absolute z-2 bottom-0 right-0 p-4">
-        <Button rounded size="large" aria-label="Добавить" @click="handleAdd">
+      <div v-if="!isSelecting" class="absolute z-2 bottom-0 right-0 p-4">
+        <Button rounded size="large" aria-label="Создать запись" :disabled="isGroupsLoading" @click="createItem(currentId)">
           <div class="i-[mdi--plus] size-6" />
         </Button>
       </div>
+      <CollectionSelectionFooter
+        v-if="isSelecting"
+        :selected-count="selectedCount"
+        :available-count="availableCount"
+        :all-selected="allSelected"
+        :partially-selected="partiallySelected"
+        :busy="isSelectionBusy"
+        @exit="requestExit"
+        @toggle-all="toggleAll"
+      />
+      <GroupFormDialog ref="groupForm" :collection-id="collectionId" />
+      <GroupDestinationDialog
+        ref="groupDestination"
+        :groups="groups"
+        :collection-label="collection.label"
+        @items-moved="cancelSelection"
+      />
     </div>
   </div>
 </template>

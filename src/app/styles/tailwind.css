@@ -8,7 +8,9 @@
   --color-primary: var(--p-primary-color);
   --color-surface-100: var(--p-surface-100);
   --color-surface-200: var(--p-surface-200);
+  --color-surface-300: var(--p-surface-300);
   --color-surface-ground: var(--p-surface-ground);
+  --color-muted-color: var(--p-text-muted-color);
   --color-danger: var(--p-red-500);
 }
 

@@ -1,4 +1,4 @@
-import type { AppDataBackup, AppDataBackupV1 } from '~/shared/types';
+import type { AppDataBackup } from '~/shared/types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
@@ -14,7 +14,7 @@ export const parseAppDataBackup = (text: string): AppDataBackup => {
     throw new Error('Некорректный формат backup-файла');
   }
 
-  if (parsed.version !== 1) {
+  if (parsed.version !== 1 && parsed.version !== 2) {
     throw new Error(`Неподдерживаемая версия backup-файла: ${String(parsed.version)}`);
   }
 
@@ -31,7 +31,11 @@ export const parseAppDataBackup = (text: string): AppDataBackup => {
     throw new Error('В backup-файле отсутствуют обязательные массивы данных');
   }
 
-  return parsed as AppDataBackupV1;
+  if (parsed.version === 2 && !Array.isArray(data.groups)) {
+    throw new Error('В backup-файле отсутствует массив групп');
+  }
+
+  return parsed as AppDataBackup;
 };
 
 export const buildAppDataBackupFileName = (date = new Date()) => {
@@ -43,5 +47,5 @@ export const buildAppDataBackupFileName = (date = new Date()) => {
   const min = pad(date.getMinutes());
   const sec = pad(date.getSeconds());
 
-  return `journal-backup-v1-${yyyy}${mm}${dd}-${hh}${min}${sec}.json`;
+  return `journal-backup-v2-${yyyy}${mm}${dd}-${hh}${min}${sec}.json`;
 };
