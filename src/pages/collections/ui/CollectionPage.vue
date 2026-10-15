@@ -33,7 +33,8 @@ const {
 const { view, searchInput, searchFieldIds, searchQuery, searching, rows, activateGroup } = useCollectionView(scope);
 const selection = useCollectionSelection(scope, rows, groupDestination);
 const {
-  isSelecting, selectedIds, selectedCount, availableCount, allSelected, partiallySelected,
+  isSelecting, selectedIds, selectedCount, totalCount, availableCount, availableSelectedCount,
+  selectedCountsByGroup, allSelected, partiallySelected,
   isBusy: isSelectionBusy, startSelection, cancelSelection, requestExit, toggleItem, toggleAll,
 } = selection;
 const { pageActions, groupActions, isGroupBusy, openGroupMenu } = useCollectionActions(scope, view, selection, {
@@ -111,6 +112,7 @@ watch([searchQuery, searchFieldIds, currentId, view], () => {
           :group-actions-disabled="isGroupBusy || isSelecting"
           :selection-active="isSelecting"
           :selected-ids="selectedIds"
+          :selected-counts-by-group="selectedCountsByGroup"
           :selection-disabled="isSelectionBusy || isGroupBusy"
           @activate-group="activateGroup"
           @group-menu="openGroupMenu"
@@ -127,7 +129,9 @@ watch([searchQuery, searchFieldIds, currentId, view], () => {
       <CollectionSelectionFooter
         v-if="isSelecting"
         :selected-count="selectedCount"
+        :total-count="totalCount"
         :available-count="availableCount"
+        :available-selected-count="availableSelectedCount"
         :all-selected="allSelected"
         :partially-selected="partiallySelected"
         :busy="isSelectionBusy"

@@ -6,7 +6,7 @@ import type {
   ItemRepository,
 } from '~/shared/storage/contracts';
 import { getRepositories } from '~/shared/storage/instance';
-import { ITEM_QUERY_KEYS } from './keys';
+import { COLLECTION_QUERY_KEYS, ITEM_QUERY_KEYS } from './keys';
 
 export { ITEM_QUERY_KEYS } from './keys';
 
@@ -36,6 +36,7 @@ export const createItemMutation = defineMutationOptions({
   onSuccess: (item) => {
     const queryCache = useQueryCache();
     queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byCollection(item.collectionId) });
+    queryCache.invalidateQueries({ key: COLLECTION_QUERY_KEYS.root, exact: true });
   },
 });
 
@@ -56,6 +57,7 @@ export const removeItemMutation = defineMutationOptions({
     const queryCache = useQueryCache();
     queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byCollection(vars.collectionId) });
     queryCache.invalidateQueries({ key: ITEM_QUERY_KEYS.byId(vars.id) });
+    queryCache.invalidateQueries({ key: COLLECTION_QUERY_KEYS.root, exact: true });
   },
 });
 
@@ -78,7 +80,10 @@ const invalidateBatchItems = (collectionId: string, ids: string[]) => {
 
 export const removeItemsMutation = defineMutationOptions({
   mutation: (payload: ItemBatchPayload) => getRepositories().item.removeMany(payload),
-  onSuccess: (_data, payload) => invalidateBatchItems(payload.collectionId, payload.ids),
+  onSuccess: (_data, payload) => {
+    invalidateBatchItems(payload.collectionId, payload.ids);
+    useQueryCache().invalidateQueries({ key: COLLECTION_QUERY_KEYS.root, exact: true });
+  },
 });
 
 export const moveItemsMutation = defineMutationOptions({

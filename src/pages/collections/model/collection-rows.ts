@@ -4,7 +4,7 @@ import type { createGroupHierarchy } from './group-hierarchy';
 export type CollectionView = 'navigation' | 'tree';
 
 export type CollectionRow =
-  | { id: string; kind: 'group'; group: CollectionGroup; depth: number; expanded: boolean }
+  | { id: string; kind: 'group'; group: CollectionGroup; depth: number; expanded: boolean; itemCount: number }
   | { id: string; kind: 'item'; item: Item; depth: number; path: string };
 
 export const buildCollectionRows = (options: {
@@ -12,10 +12,11 @@ export const buildCollectionRows = (options: {
   parentId: string | null;
   view: CollectionView;
   items: Item[];
+  itemCountsByGroup: Map<string, number>;
   searching: boolean;
   expandedIds: Set<string>;
 }): CollectionRow[] => {
-  const { hierarchy, parentId, view, items, searching, expandedIds } = options;
+  const { hierarchy, parentId, view, items, itemCountsByGroup, searching, expandedIds } = options;
   if (view === 'navigation' && searching) {
     return items.map(item => ({
       id: `item:${item.id}`,
@@ -51,7 +52,14 @@ export const buildCollectionRows = (options: {
       if (searching && !matchedGroupIds.has(group.id)) continue;
       let expanded = false;
       if (view === 'tree') expanded = searching || expandedIds.has(group.id);
-      pending.push({ id: `group:${group.id}`, kind: 'group', group, depth, expanded });
+      pending.push({
+        id: `group:${group.id}`,
+        kind: 'group',
+        group,
+        depth,
+        expanded,
+        itemCount: itemCountsByGroup.get(group.id) ?? 0,
+      });
     }
   };
 

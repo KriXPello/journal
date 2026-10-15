@@ -112,10 +112,13 @@ const sortedCollections = computed(() =>
         >
           <a
             :href="href"
-            class="p-4 border border-surface-200 rounded-lg flex gap-4"
+            class="p-4 border border-surface-200 rounded-lg flex items-center gap-4"
             @click="navigate"
           >
-            <span class="text-2xl">{{ coll.label }}</span>
+            <span class="grow min-w-0 break-words text-2xl">{{ coll.label }}</span>
+            <span class="shrink-0 text-muted-color tabular-nums" :aria-label="`Всего записей: ${coll.itemCount}`">
+              {{ coll.itemCount }}
+            </span>
           </a>
         </RouterLink>
       </div>

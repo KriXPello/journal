@@ -25,11 +25,28 @@ export const useCollectionSelection = (
     return ids;
   });
   const availableCount = computed(() => availableIds.value.size);
+  const availableSelectedCount = computed(() => {
+    let count = 0;
+    for (const id of availableIds.value) {
+      if (selectedIds.value.has(id)) count++;
+    }
+    return count;
+  });
   const selectedCount = computed(() => selectedIds.value.size);
+  const totalCount = computed(() => scope.items.value.length);
+  const selectedCountsByGroup = computed(() => {
+    const counts = new Map<string, number>();
+    for (const item of scope.items.value) {
+      if (!selectedIds.value.has(item.id)) continue;
+      for (const group of scope.hierarchy.value.getPath(item.groupId)) {
+        counts.set(group.id, (counts.get(group.id) ?? 0) + 1);
+      }
+    }
+    return counts;
+  });
   const allSelected = computed(() => availableCount.value > 0
-    && [...availableIds.value].every(id => selectedIds.value.has(id)));
-  const partiallySelected = computed(() => !allSelected.value
-    && [...availableIds.value].some(id => selectedIds.value.has(id)));
+    && availableSelectedCount.value === availableCount.value);
+  const partiallySelected = computed(() => !allSelected.value && availableSelectedCount.value > 0);
 
   const startSelection = (id: string) => {
     if (isBusy.value || !availableIds.value.has(id)) return;
@@ -117,7 +134,10 @@ export const useCollectionSelection = (
     isSelecting,
     selectedIds,
     selectedCount,
+    totalCount,
     availableCount,
+    availableSelectedCount,
+    selectedCountsByGroup,
     allSelected,
     partiallySelected,
     isBusy,

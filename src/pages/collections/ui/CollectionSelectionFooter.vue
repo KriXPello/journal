@@ -4,7 +4,9 @@ import Button from 'primevue/button';
 
 defineProps<{
   selectedCount: number;
+  totalCount: number;
   availableCount: number;
+  availableSelectedCount: number;
   allSelected: boolean;
   partiallySelected: boolean;
   busy: boolean;
@@ -32,7 +34,10 @@ const emit = defineEmits<{
             aria-label="Выбрать все записи текущего списка"
             @update:model-value="emit('toggleAll')"
           />
-          <p class="text-sm" aria-live="polite">Выбрано: {{ selectedCount }}</p>
+          <div class="text-sm tabular-nums" aria-live="polite">
+            <p>В списке: {{ availableSelectedCount }} из {{ availableCount }}</p>
+            <p class="text-muted-color">Всего в коллекции: {{ selectedCount }} из {{ totalCount }}</p>
+          </div>
         </div>
         <Button
           text

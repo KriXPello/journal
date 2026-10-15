@@ -11,7 +11,14 @@ export { COLLECTION_QUERY_KEYS } from './keys';
 
 export const collectionsQuery = defineQueryOptions({
   key: COLLECTION_QUERY_KEYS.root,
-  query: () => getRepositories().collection.getAll(),
+  query: async () => {
+    const repositories = getRepositories();
+    const collections = await repositories.collection.getAll();
+    return Promise.all(collections.map(async collection => ({
+      ...collection,
+      itemCount: await repositories.item.countCollectionItems({ collectionId: collection.id }),
+    })));
+  },
 });
 
 export const collectionByIdQuery = defineQueryOptions(

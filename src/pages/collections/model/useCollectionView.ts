@@ -36,11 +36,22 @@ export const useCollectionView = (scope: ReturnType<typeof useCollectionScope>) 
     allFieldIds: scope.fields.value.map(field => field.id),
   }));
 
+  const itemCountsByGroup = computed(() => {
+    const counts = new Map<string, number>();
+    for (const item of scope.scopedItems.value) {
+      for (const group of scope.hierarchy.value.getPath(item.groupId)) {
+        counts.set(group.id, (counts.get(group.id) ?? 0) + 1);
+      }
+    }
+    return counts;
+  });
+
   const rows = computed(() => buildCollectionRows({
     hierarchy: scope.hierarchy.value,
     parentId: scope.currentId.value,
     view: view.value,
     items: searchedItems.value,
+    itemCountsByGroup: itemCountsByGroup.value,
     searching: searching.value,
     expandedIds: expandedIds.value,
   }));

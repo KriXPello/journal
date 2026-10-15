@@ -16,6 +16,7 @@ const props = defineProps<{
   groupActionsDisabled: boolean;
   selectionActive: boolean;
   selectedIds: Set<string>;
+  selectedCountsByGroup: Map<string, number>;
   selectionDisabled: boolean;
 }>();
 const emit = defineEmits<{
@@ -71,7 +72,16 @@ defineExpose({ scrollToStart });
               />
               <div class="i-[mdi--folder-outline] size-6 shrink-0" />
               <span class="grow min-w-0 break-words font-semibold">{{ row.group.label }}</span>
-              <div v-if="view === 'navigation'" class="i-[mdi--chevron-right] size-5 shrink-0" />
+              <span
+                v-if="selectionActive"
+                class="shrink-0 text-muted-color tabular-nums"
+                :aria-label="`Выбрано записей в группе с подгруппами: ${selectedCountsByGroup.get(row.group.id) ?? 0} из ${row.itemCount}`"
+              >
+                {{ selectedCountsByGroup.get(row.group.id) ?? 0 }} / {{ row.itemCount }}
+              </span>
+              <span v-else class="shrink-0 text-muted-color tabular-nums" :aria-label="`Всего записей: ${row.itemCount}`">
+                {{ row.itemCount }}
+              </span>
             </button>
             <Button
               text

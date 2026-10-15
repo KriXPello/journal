@@ -105,6 +105,7 @@ export const useCollectionScope = (options: {
     collectionId,
     collection,
     groups,
+    items,
     fields,
     hierarchy,
     currentId,

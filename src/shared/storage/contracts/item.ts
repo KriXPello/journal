@@ -22,6 +22,7 @@ export type ItemBatchPayload = {
 
 export type ItemRepository = {
   getCollectionItems: (data: GetCollectionItemsPayload) => Promise<Item[]>;
+  countCollectionItems: (data: GetCollectionItemsPayload) => Promise<number>;
   getOne: (id: string) => Promise<Item | undefined>;
   create: (data: CreateItemPayload) => Promise<Item>;
   update: (data: UpdateItemPayload) => Promise<Item>;

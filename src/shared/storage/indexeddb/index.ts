@@ -100,6 +100,7 @@ export const createIndexedDbRepositories = async (dbName = 'app-db') => {
       const items = await db.getAllFromIndex('items', 'by-collection-id', payload.collectionId);
       return items;
     },
+    countCollectionItems: payload => db.countFromIndex('items', 'by-collection-id', payload.collectionId),
     getOne: async (id) => {
       const record = await db.get('items', id);
       return record;
